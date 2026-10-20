@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Fourcast Zeiterfassung</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" type="image/png" href="img/logo.png">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/de.global.min.js"></script>
@@ -16,6 +17,7 @@
   <!-- Login -->
   <section id="login-screen" class="screen" hidden>
     <div class="card login-card">
+      <img src="img/logo.png" alt="" class="login-logo">
       <h1 class="brand">Fourcast <span>Zeiterfassung</span></h1>
       <p class="muted">Melde dich mit deinem GitHub-Account an.</p>
       <button id="login-btn" class="btn primary">Mit GitHub anmelden</button>
@@ -45,7 +47,7 @@
 
   <div id="app" hidden>
     <header class="topbar">
-      <div class="brand">Fourcast <span>Zeiterfassung</span></div>
+      <div class="brand"><img src="img/logo.png" alt="" class="logo">Fourcast <span>Zeiterfassung</span></div>
       <nav class="tabs">
         <a href="#erfassen" data-tab="erfassen">Erfassen</a>
         <a href="#uebersicht" data-tab="uebersicht">Übersicht</a>
@@ -97,10 +99,7 @@
             <fieldset class="field">
               <legend>Tags</legend>
               <div id="tag-chips" class="chips"></div>
-              <div class="add-tag">
-                <input id="new-tag" type="text" placeholder="Neuer Tag …" maxlength="30">
-                <button type="button" id="add-tag-btn" class="btn ghost small">+ Tag</button>
-              </div>
+              <p class="muted small tag-hint">Ein Tag fehlt? Frag Nika.</p>
             </fieldset>
             <label class="field"><span>Kommentar <span class="muted">(optional)</span></span>
               <textarea name="comment" rows="2" maxlength="500"></textarea>

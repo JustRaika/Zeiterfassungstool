@@ -94,7 +94,7 @@ function toCalendarEvent(row) {
     allDay: row.all_day,
     backgroundColor: color,
     borderColor: color,
-    textColor: '#ffffff',
+    textColor: '#1c1c23', // dunkle Schrift auf den Pastellfarben
     extendedProps: { row },
   };
 }
