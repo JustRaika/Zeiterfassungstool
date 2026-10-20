@@ -1,0 +1,33 @@
+# Hält das Supabase-Projekt wach.
+# Supabase Free pausiert Projekte nach 1 Woche ohne Zugriff. Dieser Workflow
+# ruft zweimal pro Woche die Funktion keep_alive() auf (siehe supabase/schema.sql).
+# URL und Key kommen aus js/config.js, es braucht also keine Secrets.
+
+name: Supabase wach halten
+
+on:
+  schedule:
+    - cron: '17 6 * * 1,4'   # Montag und Donnerstag, 06:17 UTC
+  workflow_dispatch:          # manuell starten: Actions → Supabase wach halten → Run workflow
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: keep_alive() aufrufen
+        run: |
+          URL=$(grep -oP "SUPABASE_URL = '\K[^']+" js/config.js)
+          KEY=$(grep -oP "SUPABASE_ANON_KEY = '\K[^']+" js/config.js)
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "Keine Supabase-Zugangsdaten in js/config.js – nichts zu tun."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error --retry 3 \
+            -X POST "$URL/rest/v1/rpc/keep_alive" \
+            -H "apikey: $KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo
