@@ -1,0 +1,306 @@
+// Datenzugriff. Zwei Backends mit derselben API:
+//  - Supabase (echte, gemeinsame Datenbank)
+//  - Demo (Beispieldaten im localStorage, wenn config.js leer ist)
+
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+
+const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/+esm';
+const PAGE_SIZE = 1000; // Supabase liefert max. 1000 Zeilen pro Abfrage
+
+export async function createDb() {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    const { createClient } = await import(SUPABASE_JS);
+    return new SupabaseDb(createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+  }
+  return new DemoDb();
+}
+
+function check({ data, error }) {
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// ---------------------------------------------------------------------
+// Supabase
+// ---------------------------------------------------------------------
+class SupabaseDb {
+  mode = 'supabase';
+
+  constructor(client) {
+    this.sb = client;
+  }
+
+  // { status: 'signedOut' } | { status: 'notMember', login } | { status: 'ok', me }
+  async getAuthState() {
+    const { data: { session } } = await this.sb.auth.getSession();
+    if (!session) return { status: 'signedOut' };
+    const username = check(await this.sb.rpc('current_member'));
+    if (!username) {
+      const meta = session.user.user_metadata || {};
+      return { status: 'notMember', login: meta.user_name || meta.preferred_username || session.user.email };
+    }
+    const me = check(await this.sb.from('members').select('*').eq('github_username', username).single());
+    return { status: 'ok', me };
+  }
+
+  async signIn() {
+    const redirectTo = location.origin + location.pathname;
+    check(await this.sb.auth.signInWithOAuth({ provider: 'github', options: { redirectTo } }));
+  }
+
+  async signOut() {
+    await this.sb.auth.signOut();
+  }
+
+  async listMembers() {
+    return check(await this.sb.from('members').select('*').order('display_name'));
+  }
+
+  async updateMe(username, patch) {
+    return check(await this.sb.from('members').update(patch).eq('github_username', username).select().single());
+  }
+
+  async listTags() {
+    return check(await this.sb.from('tags').select('*').order('created_at').order('name'));
+  }
+
+  async addTag(tag) {
+    return check(await this.sb.from('tags').insert(tag).select().single());
+  }
+
+  async listEntries() {
+    const rows = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const page = check(await this.sb.from('time_entries').select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1));
+      rows.push(...page);
+      if (page.length < PAGE_SIZE) return rows;
+    }
+  }
+
+  async addEntry(entry) {
+    return check(await this.sb.from('time_entries').insert(entry).select().single());
+  }
+
+  async updateEntry(id, patch) {
+    return check(await this.sb.from('time_entries').update(patch).eq('id', id).select().single());
+  }
+
+  async deleteEntry(id) {
+    check(await this.sb.from('time_entries').delete().eq('id', id));
+  }
+
+  async listEvents() {
+    return check(await this.sb.from('events').select('*').order('starts_at'));
+  }
+
+  async addEvent(ev) {
+    return check(await this.sb.from('events').insert(ev).select().single());
+  }
+
+  async updateEvent(id, patch) {
+    return check(await this.sb.from('events').update(patch).eq('id', id).select().single());
+  }
+
+  async deleteEvent(id) {
+    check(await this.sb.from('events').delete().eq('id', id));
+  }
+}
+
+// ---------------------------------------------------------------------
+// Demo (localStorage)
+// ---------------------------------------------------------------------
+const DEMO_KEY = 'fourcast-zeit-demo-v1';
+const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
+
+const DEMO_TAGS = [
+  ['Coding', '#2e86ab'], ['3D magic', '#9b5de5'], ['Organisation', '#6b7280'],
+  ['Meeting', '#f0a202'], ['Artsy Stuff', '#e4572e'], ['Sound', '#00a6a6'],
+  ['Woahbuilding', '#29a36a'], ['VFX', '#d63384'], ['Lighting', '#e0b000'],
+  ['Social Media', '#3a86ff'], ['Projektplanung', '#8d6e63'], ['Puzzle Cooking', '#ff7f50'],
+  ['Testing', '#4c956c'], ['Texturing', '#b5838d'],
+];
+
+const DEMO_MEMBERS = [
+  ['demo-alex', 'Alex', '#e4572e', ['Coding', 'Testing', 'Puzzle Cooking']],
+  ['demo-sam', 'Sam', '#2e86ab', ['3D magic', 'Texturing', 'Lighting']],
+  ['demo-kim', 'Kim', '#29a36a', ['Artsy Stuff', 'Woahbuilding', 'VFX']],
+  ['demo-robin', 'Robin', '#9b5de5', ['Sound', 'Social Media']],
+  ['demo-jo', 'Jo', '#f0a202', ['Organisation', 'Projektplanung', 'Coding']],
+];
+
+function safeGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeSet(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* privater Modus o.ä. – dann nur im Speicher */ }
+}
+
+function isoDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function seedDemo() {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+
+  const members = DEMO_MEMBERS.map(([github_username, display_name, color]) =>
+    ({ github_username, display_name, color, timer_started_at: null }));
+  const tags = DEMO_TAGS.map(([name, color], i) =>
+    ({ name, color, created_at: new Date(2026, 0, 1, 0, 0, i).toISOString() }));
+
+  const entries = [];
+  const today = new Date();
+  for (let back = 0; back < 100; back++) {
+    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - back);
+    for (const [username, , , favs] of DEMO_MEMBERS) {
+      if (rnd() < 0.55) continue;
+      const tagList = [pick(favs)];
+      if (rnd() < 0.25) tagList.push(pick(DEMO_TAGS)[0]);
+      entries.push({
+        id: crypto.randomUUID(),
+        member: username,
+        date: isoDate(day),
+        duration_minutes: 15 * (2 + Math.floor(rnd() * 20)),
+        tags: [...new Set(tagList)],
+        comment: rnd() < 0.3 ? pick(['Bugfixes', 'Prototyp angepasst', 'Feedback eingearbeitet', 'Level 2 Blockout', 'Recherche']) : null,
+        created_at: day.toISOString(),
+      });
+    }
+  }
+
+  const at = (dayOffset, h, m = 0) => {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset, h, m);
+    return d.toISOString();
+  };
+  const events = [
+    { title: 'Weekly Sync', starts_at: at(2, 18), ends_at: at(2, 19), all_day: false, location: 'Discord', created_by: 'demo-jo' },
+    { title: 'Playtest Session', starts_at: at(9, 14), ends_at: at(9, 17), all_day: false, location: 'Uni, Raum 2.14', created_by: 'demo-alex' },
+    { title: 'Deadline Vertical Slice', starts_at: at(16, 0), ends_at: null, all_day: true, location: null, created_by: 'demo-jo' },
+    { title: 'Weekly Sync', starts_at: at(-5, 18), ends_at: at(-5, 19), all_day: false, location: 'Discord', created_by: 'demo-jo' },
+  ].map((e) => ({ id: crypto.randomUUID(), description: null, created_at: new Date().toISOString(), ...e }));
+
+  return { members, tags, entries, events };
+}
+
+class DemoDb {
+  mode = 'demo';
+
+  constructor() {
+    try {
+      this.data = JSON.parse(safeGet(DEMO_KEY)) || seedDemo();
+    } catch {
+      this.data = seedDemo();
+    }
+    this.save();
+  }
+
+  save() {
+    safeSet(DEMO_KEY, JSON.stringify(this.data));
+  }
+
+  get user() {
+    const u = safeGet(DEMO_USER_KEY);
+    return this.data.members.some((m) => m.github_username === u) ? u : this.data.members[0].github_username;
+  }
+
+  setDemoUser(username) {
+    safeSet(DEMO_USER_KEY, username);
+  }
+
+  resetDemo() {
+    this.data = seedDemo();
+    this.save();
+  }
+
+  async getAuthState() {
+    return { status: 'ok', me: structuredClone(this.data.members.find((m) => m.github_username === this.user)) };
+  }
+
+  async signIn() {}
+  async signOut() {}
+
+  async listMembers() {
+    return structuredClone(this.data.members).sort((a, b) => a.display_name.localeCompare(b.display_name));
+  }
+
+  async updateMe(username, patch) {
+    if (username !== this.user) throw new Error('Keine Berechtigung');
+    const m = this.data.members.find((x) => x.github_username === username);
+    Object.assign(m, patch);
+    this.save();
+    return structuredClone(m);
+  }
+
+  async listTags() {
+    return structuredClone(this.data.tags);
+  }
+
+  async addTag(tag) {
+    if (this.data.tags.some((t) => t.name.toLowerCase() === tag.name.toLowerCase())) {
+      throw new Error(`Den Tag „${tag.name}“ gibt es schon.`);
+    }
+    const row = { color: '#6b7280', ...tag, created_at: new Date().toISOString() };
+    this.data.tags.push(row);
+    this.save();
+    return structuredClone(row);
+  }
+
+  async listEntries() {
+    return structuredClone(this.data.entries).sort((a, b) =>
+      b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
+  }
+
+  ownEntry(id) {
+    const e = this.data.entries.find((x) => x.id === id);
+    if (!e || e.member !== this.user) throw new Error('Nur eigene Einträge können geändert werden.');
+    return e;
+  }
+
+  async addEntry(entry) {
+    const row = { id: crypto.randomUUID(), member: this.user, comment: null, tags: [], created_at: new Date().toISOString(), ...entry };
+    if (row.member !== this.user) throw new Error('Nur eigene Einträge können angelegt werden.');
+    this.data.entries.push(row);
+    this.save();
+    return structuredClone(row);
+  }
+
+  async updateEntry(id, patch) {
+    const e = this.ownEntry(id);
+    Object.assign(e, patch, { member: this.user });
+    this.save();
+    return structuredClone(e);
+  }
+
+  async deleteEntry(id) {
+    this.ownEntry(id);
+    this.data.entries = this.data.entries.filter((x) => x.id !== id);
+    this.save();
+  }
+
+  async listEvents() {
+    return structuredClone(this.data.events);
+  }
+
+  async addEvent(ev) {
+    const row = { id: crypto.randomUUID(), created_by: this.user, created_at: new Date().toISOString(), ...ev };
+    this.data.events.push(row);
+    this.save();
+    return structuredClone(row);
+  }
+
+  async updateEvent(id, patch) {
+    const e = this.data.events.find((x) => x.id === id);
+    Object.assign(e, patch);
+    this.save();
+    return structuredClone(e);
+  }
+
+  async deleteEvent(id) {
+    this.data.events = this.data.events.filter((x) => x.id !== id);
+    this.save();
+  }
+}
