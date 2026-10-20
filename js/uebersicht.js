@@ -118,7 +118,7 @@ function renderTable(list) {
     return;
   }
   $('#entries-body').innerHTML = list.map((e) => {
-    const own = e.member === ctx.me.github_username;
+    const own = ctx.canEdit(e);
     return `<tr>
       <td class="date">${fmtDate(e.date)}</td>
       <td class="person">${personLabel(ctx.memberMap.get(e.member))}</td>

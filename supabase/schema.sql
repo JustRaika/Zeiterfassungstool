@@ -14,9 +14,13 @@
 create table if not exists public.members (
   github_username  text primary key,
   display_name     text not null,
-  color            text not null default '#6b7280',
-  timer_started_at timestamptz            -- läuft gerade ein Timer? (sonst null)
+  color            text not null default '#6b7280'
 );
+-- Timer-Stempelungen: [{"start": ISO, "end": ISO | null}, ...]; letzter Abschnitt ohne end = läuft.
+-- null = kein Timer aktiv. Pausen sind die Lücken zwischen den Abschnitten.
+alter table public.members add column if not exists timer_segments jsonb;
+-- Admins dürfen alle Zeiteinträge bearbeiten und löschen.
+alter table public.members add column if not exists is_admin boolean not null default false;
 
 -- Tags (Kategorien) für Zeiteinträge.
 create table if not exists public.tags (
@@ -77,6 +81,21 @@ $$;
 revoke all on function public.current_member() from public, anon;
 grant execute on function public.current_member() to authenticated;
 
+-- Ist die eingeloggte Person Admin?
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((select m.is_admin from public.members m
+                   where m.github_username = public.current_member()), false)
+$$;
+
+revoke all on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated;
+
 -- Keep-Alive: Supabase Free pausiert Projekte nach 1 Woche ohne Zugriff.
 -- Der GitHub-Workflow .github/workflows/keep-alive.yml ruft diese Funktion
 -- regelmässig auf. Sie liest keine Daten und ändert nichts.
@@ -114,9 +133,9 @@ create policy "members_update_own" on public.members
   using (github_username = public.current_member())
   with check (github_username = public.current_member());
 
--- In members dürfen über die App nur Name, Farbe und Timer geändert werden.
+-- In members dürfen über die App nur Name, Farbe und Timer geändert werden (is_admin nicht!).
 revoke insert, update, delete on public.members from anon, authenticated;
-grant update (display_name, color, timer_started_at) on public.members to authenticated;
+grant update (display_name, color, timer_segments) on public.members to authenticated;
 
 -- tags: alle im Team sehen sie, neue Tags legt nur Nika im Supabase Table Editor an
 drop policy if exists "tags_all" on public.tags;
@@ -125,7 +144,7 @@ create policy "tags_select" on public.tags
   for select to authenticated using (public.current_member() is not null);
 revoke insert, update, delete on public.tags from anon, authenticated;
 
--- time_entries: alle sehen alles, ändern nur eigene Einträge
+-- time_entries: alle sehen alles, ändern nur eigene Einträge (Admins: alle)
 drop policy if exists "entries_select" on public.time_entries;
 create policy "entries_select" on public.time_entries
   for select to authenticated using (public.current_member() is not null);
@@ -137,12 +156,12 @@ create policy "entries_insert_own" on public.time_entries
 drop policy if exists "entries_update_own" on public.time_entries;
 create policy "entries_update_own" on public.time_entries
   for update to authenticated
-  using (member = public.current_member())
-  with check (member = public.current_member());
+  using (member = public.current_member() or public.is_admin())
+  with check (member = public.current_member() or public.is_admin());
 
 drop policy if exists "entries_delete_own" on public.time_entries;
 create policy "entries_delete_own" on public.time_entries
-  for delete to authenticated using (member = public.current_member());
+  for delete to authenticated using (member = public.current_member() or public.is_admin());
 
 -- events: gemeinsamer Kalender, alle im Team dürfen alles
 drop policy if exists "events_all" on public.events;
@@ -165,6 +184,9 @@ insert into public.members (github_username, display_name, color) values
   ('Rico-Uttinger',      'Rico',   '#ffb88c')   -- pastellorange
 on conflict (github_username) do update
   set display_name = excluded.display_name, color = excluded.color;
+
+-- ADMIN: darf alle Zeiteinträge bearbeiten und löschen.
+update public.members set is_admin = (github_username = 'JustRaika');
 
 insert into public.tags (name, color) values
   ('Coding',         '#2e86ab'),

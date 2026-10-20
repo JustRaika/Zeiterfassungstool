@@ -46,6 +46,11 @@ const ctx = {
     ctx.tagMap = new Map(tags.map((t) => [t.name, t]));
   },
 
+  // Darf ich diesen Eintrag ändern? Eigene immer, als Admin alle.
+  canEdit(entry) {
+    return entry.member === ctx.me.github_username || !!ctx.me.is_admin;
+  },
+
   // Fehler aus der Datenbank freundlich anzeigen
   fail(err) {
     console.error(err);
@@ -93,6 +98,7 @@ async function refreshIfStale() {
 
 function setupHeader() {
   $('#user-name').textContent = ctx.me.display_name;
+  $('#admin-badge').hidden = !ctx.me.is_admin;
   $('#user-dot').style.setProperty('--c', ctx.me.color);
   $('#logout-btn').addEventListener('click', async () => {
     await ctx.db.signOut();

@@ -1,8 +1,9 @@
 // Tab "Kalender": gemeinsame Termine mit FullCalendar (global per <script> geladen).
 
-import { $, hhmm, isoDate, toast } from './util.js';
+import { $, esc, fmtDate, hhmm, isoDate, toast } from './util.js';
 
 const HOUR_MS = 60 * 60 * 1000;
+const UPCOMING_COUNT = 5;
 
 // Kalendertage addieren (nicht 24 h, sonst stimmt es bei der Zeitumstellung nicht)
 function addDays(date, days) {
@@ -30,12 +31,80 @@ export function init(c) {
     start.setHours(18, 0, 0, 0);
     openDialog(null, { start, end: new Date(start.getTime() + HOUR_MS), allDay: false });
   });
+  $('#upcoming').addEventListener('click', (e) => {
+    const item = e.target.closest('[data-event]');
+    const row = item && upcomingRows.find((r) => r.id === item.dataset.event);
+    if (row) openDialog(row);
+  });
 }
 
 export function show() {
   if (!calendar) createCalendar();
-  else calendar.refetchEvents();
+  refresh();
   calendar.updateSize();
+}
+
+// Kalender und Liste der nächsten Termine neu laden
+function refresh() {
+  calendar.refetchEvents();
+  renderUpcoming();
+}
+
+// ---------------------------------------------------------------------
+// Nächste Termine
+// ---------------------------------------------------------------------
+let upcomingRows = [];
+
+async function renderUpcoming() {
+  let rows;
+  try {
+    rows = await ctx.db.listEvents();
+  } catch (err) { ctx.fail(err); return; }
+
+  const now = new Date();
+  // Noch nicht vorbei: Ende (oder Start, wenn es kein Ende gibt) liegt in der Zukunft
+  upcomingRows = rows
+    .filter((r) => new Date(r.ends_at || r.starts_at) > now || (r.all_day && !r.ends_at && isoDate(new Date(r.starts_at)) === isoDate(now)))
+    .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+    .slice(0, UPCOMING_COUNT);
+
+  if (!upcomingRows.length) {
+    $('#upcoming').innerHTML = '<li class="empty">Keine anstehenden Termine.</li>';
+    return;
+  }
+  $('#upcoming').innerHTML = upcomingRows.map((r) => {
+    const color = ctx.memberMap.get(r.created_by)?.color || '#6b7280';
+    return `<li data-event="${esc(r.id)}" style="--c:${esc(color)}">
+      <span class="when">${esc(eventWhen(r))}</span>
+      <span class="what"><b>${esc(r.title)}</b>${r.location ? ` <span class="muted">· ${esc(r.location)}</span>` : ''}</span>
+      <span class="countdown muted">${esc(countdown(r, now))}</span>
+    </li>`;
+  }).join('');
+}
+
+// "Di., 17.11.2026", "Di., 17.11.2026, 18:00" oder "23.10. – 25.10.2026"
+function eventWhen(r) {
+  const start = new Date(r.starts_at);
+  if (r.all_day) {
+    const last = r.ends_at ? addDays(new Date(r.ends_at), -1) : start;
+    if (isoDate(last) !== isoDate(start)) {
+      return `${start.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} – ${fmtDate(isoDate(last))}`;
+    }
+    return fmtDate(isoDate(start));
+  }
+  return `${fmtDate(isoDate(start))}, ${hhmm(start)}`;
+}
+
+// "läuft", "heute", "morgen", "in 27 Tagen"
+function countdown(r, now) {
+  const start = new Date(r.starts_at);
+  if (start <= now) return 'läuft';
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const days = Math.round((startDay - today) / (24 * HOUR_MS));
+  if (days === 0) return 'heute';
+  if (days === 1) return 'morgen';
+  return `in ${days} Tagen`;
 }
 
 function createCalendar() {
@@ -108,6 +177,7 @@ async function moveEvent(info) {
       all_day: ev.allDay,
     });
     toast('Termin verschoben.');
+    renderUpcoming();
   } catch (err) {
     info.revert();
     ctx.fail(err);
@@ -199,7 +269,7 @@ async function saveEvent(e) {
     else await ctx.db.addEvent(payload);
     $('#event-dialog').close();
     toast(editing ? 'Termin gespeichert.' : 'Termin angelegt.');
-    calendar.refetchEvents();
+    refresh();
   } catch (err) {
     dialogError(err.message || String(err));
   }
@@ -211,7 +281,7 @@ async function deleteEvent() {
     await ctx.db.deleteEvent(editing.id);
     $('#event-dialog').close();
     toast('Termin gelöscht.');
-    calendar.refetchEvents();
+    refresh();
   } catch (err) {
     dialogError(err.message || String(err));
   }
