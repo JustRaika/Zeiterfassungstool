@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fourcast Zeiterfassung</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/de.global.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div id="loading" class="screen">Lädt …</div>
+
+  <!-- Login -->
+  <section id="login-screen" class="screen" hidden>
+    <div class="card login-card">
+      <h1 class="brand">Fourcast <span>Zeiterfassung</span></h1>
+      <p class="muted">Melde dich mit deinem GitHub-Account an.</p>
+      <button id="login-btn" class="btn primary">Mit GitHub anmelden</button>
+      <p id="login-error" class="error-text small" hidden></p>
+    </div>
+  </section>
+
+  <!-- Eingeloggt, aber nicht im Team -->
+  <section id="denied-screen" class="screen" hidden>
+    <div class="card login-card">
+      <h1 class="brand">Fourcast <span>Zeiterfassung</span></h1>
+      <p>Der GitHub-Account <b id="denied-login"></b> ist nicht im Team eingetragen.</p>
+      <p class="muted small">Jemand aus dem Team muss deinen Usernamen in Supabase in der Tabelle <code>members</code> ergänzen.</p>
+      <button id="denied-logout" class="btn ghost">Abmelden</button>
+    </div>
+  </section>
+
+  <!-- Fehler beim Start -->
+  <section id="error-screen" class="screen" hidden>
+    <div class="card login-card">
+      <h1 class="brand">Fourcast <span>Zeiterfassung</span></h1>
+      <p>Das hat nicht geklappt:</p>
+      <pre id="error-text" class="error-text"></pre>
+      <button class="btn ghost" onclick="location.reload()">Neu laden</button>
+    </div>
+  </section>
+
+  <div id="app" hidden>
+    <header class="topbar">
+      <div class="brand">Fourcast <span>Zeiterfassung</span></div>
+      <nav class="tabs">
+        <a href="#erfassen" data-tab="erfassen">Erfassen</a>
+        <a href="#uebersicht" data-tab="uebersicht">Übersicht</a>
+        <a href="#kalender" data-tab="kalender">Kalender</a>
+      </nav>
+      <div class="user">
+        <span id="user-dot" class="dot"></span>
+        <span id="user-name"></span>
+        <select id="demo-user" title="Demo: Person wechseln" hidden></select>
+        <button id="logout-btn" class="btn ghost small">Abmelden</button>
+      </div>
+    </header>
+
+    <div id="demo-banner" class="banner" hidden>
+      <span><b>Demo-Modus:</b> Beispieldaten, nur in diesem Browser gespeichert. Für die echte Datenbank Supabase in <code>js/config.js</code> eintragen.</span>
+      <button id="demo-reset" class="btn ghost small">Beispieldaten zurücksetzen</button>
+    </div>
+
+    <main>
+      <!-- Erfassen -->
+      <section id="view-erfassen" class="view" hidden>
+        <div class="grid erfassen-grid">
+          <div class="card timer-card">
+            <h2>Timer</h2>
+            <div id="timer-display" class="timer-display">0:00:00</div>
+            <p id="timer-hint" class="muted small">Läuft nicht.</p>
+            <div class="row">
+              <button id="timer-start" class="btn primary">▶ Start</button>
+              <button id="timer-stop" class="btn primary" hidden>■ Stop &amp; eintragen</button>
+              <button id="timer-discard" class="btn ghost" hidden>Verwerfen</button>
+            </div>
+          </div>
+
+          <form id="entry-form" class="card" novalidate>
+            <h2 id="form-title">Zeit eintragen</h2>
+            <div class="fields">
+              <label class="field">Datum
+                <input type="date" name="date" required>
+              </label>
+              <div class="duration">
+                <label class="field">Stunden
+                  <input type="number" name="hours" min="0" max="24" step="1" inputmode="numeric" placeholder="0">
+                </label>
+                <label class="field">Minuten
+                  <input type="number" name="minutes" min="0" max="59" step="1" inputmode="numeric" placeholder="0">
+                </label>
+              </div>
+            </div>
+            <fieldset class="field">
+              <legend>Tags</legend>
+              <div id="tag-chips" class="chips"></div>
+              <div class="add-tag">
+                <input id="new-tag" type="text" placeholder="Neuer Tag …" maxlength="30">
+                <button type="button" id="add-tag-btn" class="btn ghost small">+ Tag</button>
+              </div>
+            </fieldset>
+            <label class="field"><span>Kommentar <span class="muted">(optional)</span></span>
+              <textarea name="comment" rows="2" maxlength="500"></textarea>
+            </label>
+            <div class="row">
+              <button type="submit" id="entry-submit" class="btn primary">Speichern</button>
+              <button type="button" id="entry-cancel" class="btn ghost" hidden>Abbrechen</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Meine letzten Einträge</h2>
+            <div id="my-stats" class="stats"></div>
+          </div>
+          <div id="my-entries"></div>
+        </div>
+      </section>
+
+      <!-- Übersicht -->
+      <section id="view-uebersicht" class="view" hidden>
+        <div class="card filters">
+          <label class="field">Zeitraum
+            <select id="f-period">
+              <option value="month">Dieser Monat</option>
+              <option value="lastmonth">Letzter Monat</option>
+              <option value="year">Dieses Jahr</option>
+              <option value="all" selected>Alles</option>
+              <option value="custom">Eigener Zeitraum</option>
+            </select>
+          </label>
+          <label class="field custom-range" hidden>Von
+            <input type="date" id="f-from">
+          </label>
+          <label class="field custom-range" hidden>Bis
+            <input type="date" id="f-to">
+          </label>
+          <label class="field">Person
+            <select id="f-person"></select>
+          </label>
+          <label class="field">Tags
+            <select id="f-tag"></select>
+          </label>
+          <button id="csv-btn" class="btn ghost">CSV exportieren</button>
+        </div>
+
+        <div class="grid two">
+          <div class="card">
+            <h2>Anteile</h2>
+            <p class="muted small">Anteil jeder Person an der Gesamtzeit im gewählten Zeitraum<span id="shares-tag-note"></span>.</p>
+            <div id="shares" class="bars"></div>
+          </div>
+          <div class="card">
+            <h2>Zeit nach Tags</h2>
+            <p class="muted small">Einträge mit mehreren Tags zählen bei jedem Tag voll.</p>
+            <div id="tag-sums" class="bars"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Alle Einträge</h2>
+            <span id="list-total" class="muted"></span>
+          </div>
+          <div class="table-wrap">
+            <table class="entries">
+              <thead>
+                <tr><th>Datum</th><th>Person</th><th class="num">Dauer</th><th>Tags</th><th>Kommentar</th><th></th></tr>
+              </thead>
+              <tbody id="entries-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Kalender -->
+      <section id="view-kalender" class="view" hidden>
+        <div class="card">
+          <div class="card-head">
+            <h2>Gemeinsame Termine</h2>
+            <button id="event-new" class="btn primary small">+ Termin</button>
+          </div>
+          <div id="calendar"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="event-dialog">
+    <form id="event-form" novalidate>
+      <h2 id="event-dialog-title">Termin</h2>
+      <label class="field">Titel
+        <input name="title" required maxlength="120">
+      </label>
+      <label class="check"><input type="checkbox" name="all_day"> Ganztägig</label>
+      <div class="pair">
+        <label class="field">Start
+          <input type="date" name="start_date" required>
+        </label>
+        <label class="field time-field">Uhrzeit
+          <input type="time" name="start_time">
+        </label>
+      </div>
+      <div class="pair">
+        <label class="field">Ende
+          <input type="date" name="end_date">
+        </label>
+        <label class="field time-field">Uhrzeit
+          <input type="time" name="end_time">
+        </label>
+      </div>
+      <label class="field">Ort / Link
+        <input name="location" maxlength="200">
+      </label>
+      <label class="field">Beschreibung
+        <textarea name="description" rows="3" maxlength="1000"></textarea>
+      </label>
+      <p id="event-meta" class="muted small"></p>
+      <p id="event-error" class="error-text small" hidden></p>
+      <div class="row">
+        <button type="submit" class="btn primary">Speichern</button>
+        <button type="button" id="event-delete" class="btn danger">Löschen</button>
+        <button type="button" id="event-cancel" class="btn ghost">Abbrechen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
