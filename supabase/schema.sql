@@ -1,7 +1,7 @@
 -- =====================================================================
 -- Fourcast Zeiterfassung – Datenbank-Schema für Supabase
 --
--- Einmal komplett im Supabase SQL Editor ausführen (siehe README).
+-- Einmal komplett im Supabase SQL Editor ausführen.
 -- VORHER: unten bei "TEAM" eure 5 GitHub-Usernamen eintragen.
 -- =====================================================================
 
