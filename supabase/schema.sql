@@ -77,6 +77,19 @@ $$;
 revoke all on function public.current_member() from public, anon;
 grant execute on function public.current_member() to authenticated;
 
+-- Keep-Alive: Supabase Free pausiert Projekte nach 1 Woche ohne Zugriff.
+-- Der GitHub-Workflow .github/workflows/keep-alive.yml ruft diese Funktion
+-- regelmässig auf. Sie liest keine Daten und ändert nichts.
+create or replace function public.keep_alive()
+returns timestamptz
+language sql
+stable
+as $$
+  select now()
+$$;
+
+grant execute on function public.keep_alive() to anon, authenticated;
+
 -- Neue Einträge/Termine gehören automatisch der eingeloggten Person.
 alter table public.time_entries alter column member set default public.current_member();
 alter table public.events alter column created_by set default public.current_member();

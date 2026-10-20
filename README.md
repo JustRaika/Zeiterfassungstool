@@ -114,9 +114,15 @@ In Supabase: **Authentication → URL Configuration**
 ---
 
 ## Gut zu wissen
-- **Supabase Free pausiert Projekte nach 7 Tagen ohne Nutzung.** Solange ihr regelmässig Zeiten
-  eintragt, passiert das nicht. Falls doch: im Supabase-Dashboard auf **Restore** klicken.
-  Die Daten bleiben erhalten.
+- **Supabase Free pausiert Projekte nach 7 Tagen ohne Nutzung.** Damit das nicht passiert, ruft der
+  GitHub-Workflow `.github/workflows/keep-alive.yml` jeden Montag und Donnerstag die Funktion
+  `keep_alive()` in der Datenbank auf. Sie liest keine Daten und ändert nichts.
+  - Ob er läuft: im Repo unter **Actions → Supabase wach halten**. Dort kann man ihn mit
+    **Run workflow** auch von Hand starten.
+  - GitHub schaltet zeitgesteuerte Workflows in öffentlichen Repos ab, wenn 60 Tage lang niemand
+    etwas committet. Vorher kommt eine Mail. Dann unter **Actions** auf **Enable workflow** klicken.
+  - Falls das Projekt doch einmal pausiert: im Supabase-Dashboard auf **Restore** klicken.
+    Die Daten bleiben erhalten.
 - **Backup:** In der Übersicht Zeitraum „Alles“ wählen → **CSV exportieren**. Oder in Supabase
   im **Table Editor** → `time_entries` → **Export to CSV**.
 - **Tags** lassen sich in der App hinzufügen. Umbenennen oder löschen geht im Supabase **Table Editor**
