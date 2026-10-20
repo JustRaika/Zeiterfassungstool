@@ -7,7 +7,7 @@ Zeiterfassung und gemeinsamer Kalender für das Fourcast-Team.
 
 ## Funktionen
 - **Erfassen:** Start/Stop-Timer (läuft auch weiter, wenn der Browser zu ist) oder Stunden + Minuten
-  manuell eintragen. Dazu Tags (mehrere möglich) und ein optionaler Kommentar (bitte macht den, damit wir einen Überblick haben.)
+  manuell eintragen. Dazu mindestens ein Tag (mehrere möglich) und ein kurzer Kommentar (Pflicht, mind. 3 Zeichen, damit wir einen Überblick haben).
 - **Übersicht:** alle Einträge als Tabelle, filterbar nach Zeitraum, Person und Tag.
   Anteile in Prozent pro Person, Zeit nach Tags und CSV-Export für Excel als Backup. 
 - **Kalender:** gemeinsame Termine (Monat / Woche / Liste). Neue Termine per Klick auf einen Tag,

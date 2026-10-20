@@ -39,12 +39,9 @@ input:not([type="checkbox"]), textarea { cursor: text; }
 
 [hidden] { display: none !important; }
 
-h1, h2 { margin: 0 0 12px; line-height: 1.25; font-family: var(--font-display); font-weight: 600; }
-h2 { font-size: 1rem; letter-spacing: -0.01em; }
-.tabs a, .btn, .badge, .timer-display, .stats b, .bar-row .val b, .upcoming .when,
-#calendar .fc-toolbar-title, #calendar .fc-col-header-cell, #calendar .fc-button {
-  font-family: var(--font-display);
-}
+/* Unbounded nur für Titel und das Wort „Fourcast“, der Rest bleibt in der Systemschrift */
+h1, h2 { margin: 0 0 12px; line-height: 1.25; font-family: var(--font-display); font-weight: 500; }
+h2 { font-size: 0.95rem; letter-spacing: -0.01em; }
 code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }
@@ -61,7 +58,8 @@ code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-
 .login-card .brand { font-size: 1.5rem; margin-bottom: 8px; }
 .error-text { text-align: left; white-space: pre-wrap; color: var(--danger); font-size: 0.85rem; }
 
-.brand { font-family: var(--font-wordmark); font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+.brand { font-family: var(--font-text); font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.brand .wordmark { font-family: var(--font-wordmark); font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
 .login-card .brand { justify-content: center; }
 .logo { width: 32px; height: 32px; }
 .login-logo { width: 96px; height: 96px; display: block; margin: 0 auto 12px; }
@@ -153,8 +151,6 @@ textarea { resize: vertical; }
 
 .btn {
   font: inherit;
-  font-family: var(--font-display);
-  font-size: 0.85rem;
   font-weight: 500;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -367,7 +363,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
   .topbar { flex-wrap: wrap; padding: 10px 16px; gap: 8px; }
   .topbar .brand { flex: 1; }
   .tabs { order: 3; width: 100%; margin: 0; }
-  .tabs a { flex: 1; text-align: center; padding: 6px 4px; font-size: 0.8rem; }
+  .tabs a { flex: 1; text-align: center; padding: 6px 4px; }
   .banner { padding: 8px 16px; }
   .card { padding: 16px; }
   .fields { grid-template-columns: 1fr; }

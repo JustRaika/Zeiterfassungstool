@@ -4,6 +4,7 @@ import { $, esc, fmtDate, fmtDuration, fmtHours, hhmm, isoDate, sumMinutes, tagC
 
 const MAX_MINUTES = 24 * 60;
 const RECENT_COUNT = 15;
+const MIN_COMMENT = 3;
 
 let ctx;
 let form;
@@ -237,12 +238,15 @@ async function saveEntry(e) {
   if (duration <= 0) return toast('Bitte eine Dauer eintragen.', { error: true });
   if (duration > MAX_MINUTES) return toast('Maximal 24 Stunden pro Eintrag.', { error: true });
 
-  const payload = {
-    date: form.date.value,
-    duration_minutes: duration,
-    tags: ctx.tags.map((t) => t.name).filter((n) => selectedTags.has(n)),
-    comment: form.comment.value.trim() || null,
-  };
+  const tags = ctx.tags.map((t) => t.name).filter((n) => selectedTags.has(n));
+  const comment = form.comment.value.trim();
+  if (!tags.length) return toast('Bitte mindestens einen Tag wählen.', { error: true });
+  if (comment.length < MIN_COMMENT) {
+    form.comment.focus();
+    return toast(`Bitte einen kurzen Kommentar schreiben (mind. ${MIN_COMMENT} Zeichen).`, { error: true });
+  }
+
+  const payload = { date: form.date.value, duration_minutes: duration, tags, comment };
 
   const btn = $('#entry-submit');
   btn.disabled = true;

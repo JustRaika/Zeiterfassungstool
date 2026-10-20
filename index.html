@@ -21,7 +21,7 @@
   <section id="login-screen" class="screen" hidden>
     <div class="card login-card">
       <img src="img/logo.png" alt="" class="login-logo">
-      <h1 class="brand">Fourcast <span>Zeiterfassung</span></h1>
+      <h1 class="brand"><span class="wordmark">Fourcast</span> <span>Zeiterfassung</span></h1>
       <p class="muted">Melde dich mit deinem GitHub-Account an.</p>
       <button id="login-btn" class="btn primary">Mit GitHub anmelden</button>
       <p id="login-error" class="error-text small" hidden></p>
@@ -31,7 +31,7 @@
   <!-- Eingeloggt, aber nicht im Team -->
   <section id="denied-screen" class="screen" hidden>
     <div class="card login-card">
-      <h1 class="brand">Fourcast <span>Zeiterfassung</span></h1>
+      <h1 class="brand"><span class="wordmark">Fourcast</span> <span>Zeiterfassung</span></h1>
       <p>Der GitHub-Account <b id="denied-login"></b> ist nicht im Team eingetragen.</p>
       <p class="muted small">Jemand aus dem Team muss deinen Usernamen in Supabase in der Tabelle <code>members</code> ergänzen.</p>
       <button id="denied-logout" class="btn ghost">Abmelden</button>
@@ -41,7 +41,7 @@
   <!-- Fehler beim Start -->
   <section id="error-screen" class="screen" hidden>
     <div class="card login-card">
-      <h1 class="brand">Fourcast <span>Zeiterfassung</span></h1>
+      <h1 class="brand"><span class="wordmark">Fourcast</span> <span>Zeiterfassung</span></h1>
       <p>Das hat nicht geklappt:</p>
       <pre id="error-text" class="error-text"></pre>
       <button class="btn ghost" onclick="location.reload()">Neu laden</button>
@@ -50,7 +50,7 @@
 
   <div id="app" hidden>
     <header class="topbar">
-      <div class="brand"><img src="img/logo.png" alt="" class="logo">Fourcast <span>Zeiterfassung</span></div>
+      <div class="brand"><img src="img/logo.png" alt="" class="logo"><span class="wordmark">Fourcast</span> <span>Zeiterfassung</span></div>
       <nav class="tabs">
         <a href="#erfassen" data-tab="erfassen">Erfassen</a>
         <a href="#uebersicht" data-tab="uebersicht">Übersicht</a>
@@ -104,12 +104,12 @@
               </div>
             </div>
             <fieldset class="field">
-              <legend>Tags</legend>
+              <legend>Tags <span class="muted">(mind. einer)</span></legend>
               <div id="tag-chips" class="chips"></div>
               <p class="muted small tag-hint">Ein Tag fehlt? Frag Nika.</p>
             </fieldset>
-            <label class="field"><span>Kommentar <span class="muted">(optional)</span></span>
-              <textarea name="comment" rows="2" maxlength="500"></textarea>
+            <label class="field"><span>Kommentar <span class="muted">(kurzes Stichwort, mind. 3 Zeichen)</span></span>
+              <textarea name="comment" rows="2" minlength="3" maxlength="500" required placeholder="z. B. Level 2 Blockout"></textarea>
             </label>
             <div class="row">
               <button type="submit" id="entry-submit" class="btn primary">Speichern</button>
