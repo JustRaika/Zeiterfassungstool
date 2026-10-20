@@ -65,5 +65,3 @@ export function toast(message, { error = false } = {}) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), error ? 6000 : 3000);
 }
-
-export const TAG_COLORS = ['#2e86ab', '#9b5de5', '#e4572e', '#29a36a', '#f0a202', '#00a6a6', '#d63384', '#3a86ff', '#8d6e63', '#ff7f50', '#4c956c', '#b5838d'];

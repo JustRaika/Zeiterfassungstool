@@ -1,6 +1,6 @@
 // Tab "Erfassen": Start/Stop-Timer, Formular, eigene Einträge.
 
-import { $, esc, fmtDate, fmtDuration, fmtHours, hhmm, isoDate, sumMinutes, tagChips, toast, TAG_COLORS } from './util.js';
+import { $, esc, fmtDate, fmtDuration, fmtHours, hhmm, isoDate, sumMinutes, tagChips, toast } from './util.js';
 
 const MAX_MINUTES = 24 * 60;
 const RECENT_COUNT = 15;
@@ -21,10 +21,6 @@ export function init(c) {
   $('#timer-discard').addEventListener('click', discardTimer);
   form.addEventListener('submit', saveEntry);
   $('#entry-cancel').addEventListener('click', resetForm);
-  $('#add-tag-btn').addEventListener('click', addTag);
-  $('#new-tag').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addTag(); }
-  });
   $('#tag-chips').addEventListener('click', (e) => {
     const chip = e.target.closest('button.chip');
     if (!chip) return;
@@ -143,25 +139,6 @@ function renderTagChips() {
   $('#tag-chips').innerHTML = ctx.tags.map((t) =>
     `<button type="button" class="chip" data-tag="${esc(t.name)}" style="--c:${esc(t.color)}"
       aria-pressed="${selectedTags.has(t.name)}">${esc(t.name)}</button>`).join('');
-}
-
-async function addTag() {
-  const input = $('#new-tag');
-  const name = input.value.trim().replace(/\s+/g, ' ');
-  if (!name) return;
-  const existing = ctx.tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
-  if (existing) {
-    selectedTags.add(existing.name);
-  } else {
-    try {
-      const color = TAG_COLORS[ctx.tags.length % TAG_COLORS.length];
-      const tag = await ctx.db.addTag({ name, color });
-      ctx.setTags([...ctx.tags, tag]);
-      selectedTags.add(tag.name);
-    } catch (err) { ctx.fail(err); return; }
-  }
-  input.value = '';
-  renderTagChips();
 }
 
 async function saveEntry(e) {

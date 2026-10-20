@@ -118,12 +118,12 @@ create policy "members_update_own" on public.members
 revoke insert, update, delete on public.members from anon, authenticated;
 grant update (display_name, color, timer_started_at) on public.members to authenticated;
 
--- tags: alle im Team dürfen alles
+-- tags: alle im Team sehen sie, neue Tags legt nur Nika im Supabase Table Editor an
 drop policy if exists "tags_all" on public.tags;
-create policy "tags_all" on public.tags
-  for all to authenticated
-  using (public.current_member() is not null)
-  with check (public.current_member() is not null);
+drop policy if exists "tags_select" on public.tags;
+create policy "tags_select" on public.tags
+  for select to authenticated using (public.current_member() is not null);
+revoke insert, update, delete on public.tags from anon, authenticated;
 
 -- time_entries: alle sehen alles, ändern nur eigene Einträge
 drop policy if exists "entries_select" on public.time_entries;
@@ -158,11 +158,11 @@ create policy "events_all" on public.events
 
 -- TEAM: hier eure GitHub-Usernamen (genau wie auf github.com) und Anzeigenamen eintragen.
 insert into public.members (github_username, display_name, color) values
-  ('JustRaika',       'JustRaika', '#e4572e'),
-  ('CelestialInsomniac',   'CelestialInsomniac', '#2e86ab'),
-  ('mf-doodoo',   'mf-doodoo', '#29a36a'),
-  ('Rico-Uttinger',   'Rico-Uttinger', '#9b5de5'),
-  ('JanSchwegler',   'JanSchwegler', '#f0a202')
+  ('JustRaika',          'Nika',   '#8ec5ff'),  -- pastellblau
+  ('JanSchwegler',       'Jan',    '#c4a7f5'),  -- pastellviolett
+  ('CelestialInsomniac', 'Annina', '#f5a9cb'),  -- pastellpink
+  ('mf-doodoo',          'Ardit',  '#f5df8a'),  -- pastellgelb
+  ('Rico-Uttinger',      'Rico',   '#ffb88c')   -- pastellorange
 on conflict (github_username) do update
   set display_name = excluded.display_name, color = excluded.color;
 

@@ -64,10 +64,6 @@ class SupabaseDb {
     return check(await this.sb.from('tags').select('*').order('created_at').order('name'));
   }
 
-  async addTag(tag) {
-    return check(await this.sb.from('tags').insert(tag).select().single());
-  }
-
   async listEntries() {
     const rows = [];
     for (let from = 0; ; from += PAGE_SIZE) {
@@ -112,7 +108,7 @@ class SupabaseDb {
 // ---------------------------------------------------------------------
 // Demo (localStorage)
 // ---------------------------------------------------------------------
-const DEMO_KEY = 'fourcast-zeit-demo-v1';
+const DEMO_KEY = 'fourcast-zeit-demo-v2';
 const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
 
 const DEMO_TAGS = [
@@ -124,11 +120,11 @@ const DEMO_TAGS = [
 ];
 
 const DEMO_MEMBERS = [
-  ['demo-alex', 'Alex', '#e4572e', ['Coding', 'Testing', 'Puzzle Cooking']],
-  ['demo-sam', 'Sam', '#2e86ab', ['3D magic', 'Texturing', 'Lighting']],
-  ['demo-kim', 'Kim', '#29a36a', ['Artsy Stuff', 'Woahbuilding', 'VFX']],
-  ['demo-robin', 'Robin', '#9b5de5', ['Sound', 'Social Media']],
-  ['demo-jo', 'Jo', '#f0a202', ['Organisation', 'Projektplanung', 'Coding']],
+  ['demo-alex', 'Alex', '#8ec5ff', ['Coding', 'Testing', 'Puzzle Cooking']],
+  ['demo-sam', 'Sam', '#c4a7f5', ['3D magic', 'Texturing', 'Lighting']],
+  ['demo-kim', 'Kim', '#f5a9cb', ['Artsy Stuff', 'Woahbuilding', 'VFX']],
+  ['demo-robin', 'Robin', '#f5df8a', ['Sound', 'Social Media']],
+  ['demo-jo', 'Jo', '#ffb88c', ['Organisation', 'Projektplanung', 'Coding']],
 ];
 
 function safeGet(key) {
@@ -237,16 +233,6 @@ class DemoDb {
 
   async listTags() {
     return structuredClone(this.data.tags);
-  }
-
-  async addTag(tag) {
-    if (this.data.tags.some((t) => t.name.toLowerCase() === tag.name.toLowerCase())) {
-      throw new Error(`Den Tag „${tag.name}“ gibt es schon.`);
-    }
-    const row = { color: '#6b7280', ...tag, created_at: new Date().toISOString() };
-    this.data.tags.push(row);
-    this.save();
-    return structuredClone(row);
   }
 
   async listEntries() {

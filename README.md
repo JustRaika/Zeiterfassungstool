@@ -7,7 +7,7 @@ Login mit dem eigenen GitHub-Account.
 
 **Funktionen**
 - **Erfassen:** Start/Stop-Timer (läuft auch weiter, wenn der Browser zu ist) oder Stunden + Minuten
-  manuell eintragen. Dazu Tags (mehrere möglich, neue direkt anlegbar) und ein optionaler Kommentar.
+  manuell eintragen. Dazu Tags (mehrere möglich) und ein optionaler Kommentar.
 - **Übersicht:** alle Einträge als Tabelle, filterbar nach Zeitraum, Person und Tag.
   **Anteile in Prozent pro Person** (Grundlage für eine spätere Auszahlung), Zeit nach Tags, CSV-Export für Excel.
 - **Kalender:** gemeinsame Termine (Monat / Woche / Liste). Neue Termine per Klick auf einen Tag,
@@ -125,8 +125,11 @@ In Supabase: **Authentication → URL Configuration**
     Die Daten bleiben erhalten.
 - **Backup:** In der Übersicht Zeitraum „Alles“ wählen → **CSV exportieren**. Oder in Supabase
   im **Table Editor** → `time_entries` → **Export to CSV**.
-- **Tags** lassen sich in der App hinzufügen. Umbenennen oder löschen geht im Supabase **Table Editor**
-  (Tabelle `tags`). Bestehende Einträge behalten dabei ihren alten Tag-Namen.
+- **Tags** können in der App nicht selbst angelegt werden, damit die Liste übersichtlich bleibt.
+  Neue Tags legt Nika im Supabase **Table Editor** an: Tabelle `tags` → **Insert row** → Name und
+  Farbe (z. B. `#8ec5ff`). Umbenennen oder löschen geht dort auch, bestehende Einträge behalten
+  dabei aber ihren alten Tag-Namen.
+- **Farben und Namen** der Personen stehen in der Tabelle `members` und lassen sich dort ändern.
 
 ## Aufbau
 ```
