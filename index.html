@@ -6,6 +6,9 @@
   <title>Fourcast Zeiterfassung</title>
   <meta name="color-scheme" content="dark">
   <link rel="icon" type="image/png" href="img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/de.global.min.js"></script>
@@ -56,6 +59,7 @@
       <div class="user">
         <span id="user-dot" class="dot"></span>
         <span id="user-name"></span>
+        <span id="admin-badge" class="badge" title="Darf alle Einträge bearbeiten und löschen" hidden>Admin</span>
         <select id="demo-user" title="Demo: Person wechseln" hidden></select>
         <button id="logout-btn" class="btn ghost small">Abmelden</button>
       </div>
@@ -76,9 +80,12 @@
             <p id="timer-hint" class="muted small">Läuft nicht.</p>
             <div class="row">
               <button id="timer-start" class="btn primary">▶ Start</button>
-              <button id="timer-stop" class="btn primary" hidden>■ Stop &amp; eintragen</button>
+              <button id="timer-pause" class="btn primary" hidden>⏸ Pause</button>
+              <button id="timer-resume" class="btn primary" hidden>▶ Weiter</button>
+              <button id="timer-stop" class="btn ghost" hidden>■ Stop &amp; eintragen</button>
               <button id="timer-discard" class="btn ghost" hidden>Verwerfen</button>
             </div>
+            <ul id="timer-stamps" class="stamps"></ul>
           </div>
 
           <form id="entry-form" class="card" novalidate>
@@ -178,6 +185,10 @@
 
       <!-- Kalender -->
       <section id="view-kalender" class="view" hidden>
+        <div class="card">
+          <h2>Nächste Termine</h2>
+          <ul id="upcoming" class="upcoming"></ul>
+        </div>
         <div class="card">
           <div class="card-head">
             <h2>Gemeinsame Termine</h2>

@@ -13,6 +13,13 @@
   --shadow: none;
   /* Eigener Cursor, Hotspot = Fingerspitze */
   --cursor: url("../img/cursor.png") 8 3;
+  /* Schriften der Fourcast-Identity.
+     Display: Überschriften, Tabs, Knöpfe, Timer. Text bleibt die Systemschrift (besser lesbar).
+     Sobald es eine Webfont-Lizenz für itangiuh gibt: @font-face ergänzen und hier
+     --font-wordmark auf "Itangiuh", var(--font-display) setzen. */
+  --font-display: "Unbounded", system-ui, sans-serif;
+  --font-wordmark: var(--font-display);
+  --font-text: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: dark;
 }
 
@@ -22,7 +29,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 15px/1.5 var(--font-text);
   cursor: var(--cursor), auto;
 }
 a, button, select, label, summary, input[type="checkbox"], .chip, .fc-event, .fc-daygrid-day, .fc-timegrid-slot, .fc-button {
@@ -32,8 +39,12 @@ input:not([type="checkbox"]), textarea { cursor: text; }
 
 [hidden] { display: none !important; }
 
-h1, h2 { margin: 0 0 12px; line-height: 1.25; }
-h2 { font-size: 1.05rem; }
+h1, h2 { margin: 0 0 12px; line-height: 1.25; font-family: var(--font-display); font-weight: 600; }
+h2 { font-size: 1rem; letter-spacing: -0.01em; }
+.tabs a, .btn, .badge, .timer-display, .stats b, .bar-row .val b, .upcoming .when,
+#calendar .fc-toolbar-title, #calendar .fc-col-header-cell, #calendar .fc-button {
+  font-family: var(--font-display);
+}
 code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }
@@ -50,7 +61,7 @@ code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-
 .login-card .brand { font-size: 1.5rem; margin-bottom: 8px; }
 .error-text { text-align: left; white-space: pre-wrap; color: var(--danger); font-size: 0.85rem; }
 
-.brand { font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.brand { font-family: var(--font-wordmark); font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
 .login-card .brand { justify-content: center; }
 .logo { width: 32px; height: 32px; }
 .login-logo { width: 96px; height: 96px; display: block; margin: 0 auto 12px; }
@@ -142,6 +153,8 @@ textarea { resize: vertical; }
 
 .btn {
   font: inherit;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
   font-weight: 500;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -246,6 +259,51 @@ table.entries .chips { gap: 4px; }
 table.entries td.comment { color: var(--muted); min-width: 160px; }
 table.entries td.actions { white-space: nowrap; text-align: right; }
 
+/* ---------- Timer: Pause und Stempelungen ---------- */
+.timer-card.paused .timer-display { color: var(--muted); }
+.pause-clock { color: #f5df8a; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stamps { list-style: none; margin: 14px 0 0; padding: 0; font-size: 0.85rem; }
+.stamps:empty { display: none; }
+.stamps li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+.stamps li span { color: var(--muted); white-space: nowrap; }
+.stamps .stamp-pause { color: #f5df8a; padding-left: 12px; }
+.stamps .stamp-total { color: var(--muted); font-weight: 600; }
+
+/* ---------- Admin ---------- */
+.badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+/* ---------- Nächste Termine ---------- */
+.upcoming { list-style: none; margin: 0; padding: 0; }
+.upcoming li {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) 1fr auto;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 8px 0 8px 12px;
+  border-top: 1px solid var(--border);
+  border-left: 3px solid var(--c, var(--accent));
+  cursor: var(--cursor), pointer;
+}
+.upcoming li:first-child { border-top: 0; }
+.upcoming li:hover { background: var(--surface-2); }
+.upcoming li.empty { border-left: 0; padding-left: 0; cursor: default; }
+.upcoming .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.upcoming .countdown { white-space: nowrap; font-size: 0.85rem; }
+
 /* ---------- Kalender (FullCalendar) ---------- */
 #calendar {
   --fc-border-color: var(--border);
@@ -309,7 +367,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
   .topbar { flex-wrap: wrap; padding: 10px 16px; gap: 8px; }
   .topbar .brand { flex: 1; }
   .tabs { order: 3; width: 100%; margin: 0; }
-  .tabs a { flex: 1; text-align: center; padding: 6px 4px; }
+  .tabs a { flex: 1; text-align: center; padding: 6px 4px; font-size: 0.8rem; }
   .banner { padding: 8px 16px; }
   .card { padding: 16px; }
   .fields { grid-template-columns: 1fr; }
@@ -318,6 +376,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
   .entry-list .comment { grid-column: 1 / -1; grid-row: 3; }
   .entry-list .actions { grid-column: 3; grid-row: 1; }
   #user-name { display: none; }
+  .upcoming li { grid-template-columns: 1fr auto; }
+  .upcoming .what { grid-column: 1 / -1; grid-row: 2; }
   #calendar .fc-toolbar { flex-wrap: wrap; gap: 8px; }
   #calendar .fc-toolbar-title { font-size: 1rem; }
 }

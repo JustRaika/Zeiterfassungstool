@@ -17,6 +17,8 @@ export function init(c) {
   form.date.value = isoDate();
 
   $('#timer-start').addEventListener('click', startTimer);
+  $('#timer-pause').addEventListener('click', pauseTimer);
+  $('#timer-resume').addEventListener('click', resumeTimer);
   $('#timer-stop').addEventListener('click', stopTimer);
   $('#timer-discard').addEventListener('click', discardTimer);
   form.addEventListener('submit', saveEntry);
@@ -45,7 +47,8 @@ export function editEntry(entry) {
   form.comment.value = entry.comment || '';
   selectedTags = new Set(entry.tags);
   renderTagChips();
-  $('#form-title').textContent = 'Eintrag bearbeiten';
+  const owner = entry.member === ctx.me.github_username ? null : ctx.memberMap.get(entry.member);
+  $('#form-title').textContent = owner ? `Eintrag von ${owner.display_name} bearbeiten` : 'Eintrag bearbeiten';
   $('#entry-submit').textContent = 'Änderungen speichern';
   $('#entry-cancel').hidden = false;
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -63,36 +66,99 @@ function resetForm() {
 }
 
 // ---------------------------------------------------------------------
-// Timer (Startzeit liegt in der Datenbank -> läuft geräteübergreifend weiter)
+// Timer mit Pausen. Die Stempelungen liegen in der Datenbank
+// (members.timer_segments), bleiben also erhalten, wenn der Tab zu ist,
+// und laufen geräteübergreifend weiter.
+// Format: [{ start, end }]; ein Abschnitt ohne end läuft gerade,
+// sind alle abgeschlossen, ist Pause. Pausen = Lücken zwischen Abschnitten.
 // ---------------------------------------------------------------------
-function timerStart() {
-  return ctx.me.timer_started_at ? new Date(ctx.me.timer_started_at) : null;
+function segments() {
+  return (ctx.me.timer_segments || []).map((s) =>
+    ({ start: new Date(s.start), end: s.end ? new Date(s.end) : null }));
+}
+
+function timerState(segs) {
+  if (!segs.length) return 'idle';
+  return segs.at(-1).end ? 'paused' : 'running';
+}
+
+function workMs(segs, now = Date.now()) {
+  return segs.reduce((sum, s) => sum + ((s.end || now) - s.start), 0);
+}
+
+// 3725000 -> "1:02:05"
+function fmtClock(ms) {
+  const secs = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(secs / 3600);
+  const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
+
+// Dauer für die Stempel-Liste: "45 s", "12 min", "1 h 30 min"
+function fmtSpan(ms) {
+  return ms < 60000 ? `${Math.max(0, Math.round(ms / 1000))} s` : fmtDuration(Math.round(ms / 60000));
+}
+
+// Uhrzeit, bei anderem Tag mit Datum davor
+function fmtStamp(d) {
+  return d.toDateString() === new Date().toDateString() ? hhmm(d) : `${fmtDate(isoDate(d))}, ${hhmm(d)}`;
 }
 
 function renderTimer() {
-  const start = timerStart();
-  $('.timer-card').classList.toggle('running', !!start);
-  $('#timer-start').hidden = !!start;
-  $('#timer-stop').hidden = !start;
-  $('#timer-discard').hidden = !start;
-  $('#timer-hint').textContent = start
-    ? `Läuft seit ${start.toDateString() === new Date().toDateString() ? '' : `${fmtDate(isoDate(start))}, `}${hhmm(start)} Uhr`
-    : 'Läuft nicht.';
+  const segs = segments();
+  const state = timerState(segs);
+  $('.timer-card').classList.toggle('running', state === 'running');
+  $('.timer-card').classList.toggle('paused', state === 'paused');
+  $('#timer-start').hidden = state !== 'idle';
+  $('#timer-pause').hidden = state !== 'running';
+  $('#timer-resume').hidden = state !== 'paused';
+  $('#timer-stop').hidden = state === 'idle';
+  $('#timer-discard').hidden = state === 'idle';
 
   clearInterval(ticker);
   const tick = () => {
-    const secs = start ? Math.max(0, Math.floor((Date.now() - start) / 1000)) : 0;
-    const h = Math.floor(secs / 3600);
-    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
-    $('#timer-display').textContent = `${h}:${m}:${s}`;
+    const now = Date.now();
+    $('#timer-display').textContent = fmtClock(workMs(segs, now));
+    if (state === 'idle') {
+      $('#timer-hint').textContent = 'Läuft nicht.';
+    } else if (state === 'running') {
+      $('#timer-hint').textContent = `Läuft seit ${fmtStamp(segs.at(-1).start)} Uhr`;
+    } else {
+      $('#timer-hint').innerHTML = `<span class="pause-clock">⏸ Pause ${fmtClock(now - segs.at(-1).end)}</span>`;
+    }
+    renderStamps(segs, state, now);
   };
   tick();
-  if (start) ticker = setInterval(tick, 1000);
+  if (state !== 'idle') ticker = setInterval(tick, 1000);
 }
 
-async function setTimer(value) {
-  const updated = await ctx.db.updateMe(ctx.me.github_username, { timer_started_at: value });
+// Liste der Stempelungen: Arbeitsabschnitte und Pausen dazwischen
+function renderStamps(segs, state, now) {
+  const el = $('#timer-stamps');
+  if (!segs.length) { el.innerHTML = ''; return; }
+  const rows = [];
+  let pauseTotal = 0;
+  segs.forEach((s, i) => {
+    if (i > 0) {
+      const pause = s.start - segs[i - 1].end;
+      pauseTotal += pause;
+      rows.push(`<li class="stamp-pause">⏸ Pause <span>${fmtSpan(pause)}</span></li>`);
+    }
+    rows.push(`<li>▶ ${fmtStamp(s.start)} – ${s.end ? hhmm(s.end) : 'läuft'} <span>${fmtSpan((s.end || now) - s.start)}</span></li>`);
+  });
+  if (state === 'paused') {
+    const pause = now - segs.at(-1).end;
+    pauseTotal += pause;
+    rows.push(`<li class="stamp-pause">⏸ Pause seit ${hhmm(segs.at(-1).end)} <span>${fmtSpan(pause)}</span></li>`);
+  }
+  el.innerHTML = rows.join('') +
+    (pauseTotal ? `<li class="stamp-total">Pausen gesamt <span>${fmtSpan(pauseTotal)}</span></li>` : '');
+}
+
+async function setTimer(segs) {
+  const value = segs ? segs.map((s) => ({ start: s.start.toISOString(), end: s.end ? s.end.toISOString() : null })) : null;
+  const updated = await ctx.db.updateMe(ctx.me.github_username, { timer_segments: value });
   ctx.me = updated;
   ctx.memberMap.set(updated.github_username, updated);
   renderTimer();
@@ -100,14 +166,33 @@ async function setTimer(value) {
 
 async function startTimer() {
   try {
-    await setTimer(new Date().toISOString());
+    await setTimer([{ start: new Date(), end: null }]);
+  } catch (err) { ctx.fail(err); }
+}
+
+async function pauseTimer() {
+  const segs = segments();
+  if (timerState(segs) !== 'running') return;
+  segs.at(-1).end = new Date();
+  try {
+    await setTimer(segs);
+  } catch (err) { ctx.fail(err); }
+}
+
+async function resumeTimer() {
+  const segs = segments();
+  if (timerState(segs) !== 'paused') return;
+  segs.push({ start: new Date(), end: null });
+  try {
+    await setTimer(segs);
   } catch (err) { ctx.fail(err); }
 }
 
 async function stopTimer() {
-  const start = timerStart();
-  if (!start) return;
-  let minutes = Math.max(1, Math.round((Date.now() - start) / 60000));
+  const segs = segments();
+  if (!segs.length) return;
+  const start = segs[0].start;
+  let minutes = Math.max(1, Math.round(workMs(segs) / 60000));
   try {
     await setTimer(null);
   } catch (err) { ctx.fail(err); return; }
@@ -126,7 +211,7 @@ async function stopTimer() {
 }
 
 async function discardTimer() {
-  if (!confirm('Laufenden Timer verwerfen? Die Zeit wird nicht gespeichert.')) return;
+  if (!confirm('Timer verwerfen? Die gestempelte Zeit wird nicht gespeichert.')) return;
   try {
     await setTimer(null);
   } catch (err) { ctx.fail(err); }
@@ -222,7 +307,8 @@ async function onListClick(e) {
 // Wird auch von der Übersicht genutzt
 export async function deleteEntry(c, id) {
   const entry = c.entries.find((x) => x.id === id);
-  if (!entry || !confirm(`Eintrag vom ${fmtDate(entry.date)} (${fmtDuration(entry.duration_minutes)}) löschen?`)) return;
+  const owner = entry && entry.member !== c.me.github_username ? `${c.memberMap.get(entry.member)?.display_name || entry.member}: ` : '';
+  if (!entry || !confirm(`${owner}Eintrag vom ${fmtDate(entry.date)} (${fmtDuration(entry.duration_minutes)}) löschen?`)) return;
   try {
     await c.db.deleteEntry(id);
     c.entries = c.entries.filter((x) => x.id !== id);

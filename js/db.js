@@ -108,7 +108,7 @@ class SupabaseDb {
 // ---------------------------------------------------------------------
 // Demo (localStorage)
 // ---------------------------------------------------------------------
-const DEMO_KEY = 'fourcast-zeit-demo-v2';
+const DEMO_KEY = 'fourcast-zeit-demo-v3';
 const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
 
 const DEMO_TAGS = [
@@ -143,8 +143,9 @@ function seedDemo() {
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
 
-  const members = DEMO_MEMBERS.map(([github_username, display_name, color]) =>
-    ({ github_username, display_name, color, timer_started_at: null }));
+  // Die erste Demo-Person ist Admin
+  const members = DEMO_MEMBERS.map(([github_username, display_name, color], i) =>
+    ({ github_username, display_name, color, timer_segments: null, is_admin: i === 0 }));
   const tags = DEMO_TAGS.map(([name, color], i) =>
     ({ name, color, created_at: new Date(2026, 0, 1, 0, 0, i).toISOString() }));
 
@@ -240,9 +241,11 @@ class DemoDb {
       b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
   }
 
+  // Eintrag, den die aktuelle Person ändern darf (eigener, oder als Admin jeder)
   ownEntry(id) {
     const e = this.data.entries.find((x) => x.id === id);
-    if (!e || e.member !== this.user) throw new Error('Nur eigene Einträge können geändert werden.');
+    const isAdmin = this.data.members.find((m) => m.github_username === this.user)?.is_admin;
+    if (!e || (e.member !== this.user && !isAdmin)) throw new Error('Nur eigene Einträge können geändert werden.');
     return e;
   }
 
@@ -256,7 +259,7 @@ class DemoDb {
 
   async updateEntry(id, patch) {
     const e = this.ownEntry(id);
-    Object.assign(e, patch, { member: this.user });
+    Object.assign(e, patch, { member: e.member });
     this.save();
     return structuredClone(e);
   }
