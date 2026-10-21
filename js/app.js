@@ -7,7 +7,7 @@ import * as uebersicht from './uebersicht.js';
 import * as kalender from './kalender.js';
 import * as kanban from './kanban.js';
 
-const VIEWS = { erfassen, uebersicht, kalender, board: kanban };
+const VIEWS = { erfassen, uebersicht, kalender, tasks: kanban };
 const REFRESH_AFTER_MS = 60_000;
 
 // Gemeinsamer Zustand, den alle Ansichten bekommen.
@@ -72,7 +72,7 @@ function showScreen(id) {
 }
 
 function showTab() {
-  const name = location.hash.slice(1);
+  const name = location.hash.slice(1) === 'board' ? 'tasks' : location.hash.slice(1); // alter Link #board
   const tab = VIEWS[name] ? name : 'erfassen';
   if (location.hash !== `#${tab}`) history.replaceState(null, '', `#${tab}`);
 

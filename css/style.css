@@ -32,7 +32,7 @@ body {
   font: 15px/1.5 var(--font-text);
   cursor: var(--cursor), auto;
 }
-a, button, select, label, summary, input[type="checkbox"], .chip, .fc-event, .fc-daygrid-day, .fc-timegrid-slot, .fc-button {
+a, button, select, label, summary, .task-table tbody tr, input[type="checkbox"], .chip, .fc-event, .fc-daygrid-day, .fc-timegrid-slot, .fc-button {
   cursor: var(--cursor), pointer !important;
 }
 input:not([type="checkbox"]), textarea { cursor: text; }
@@ -128,7 +128,7 @@ fieldset.field legend { padding: 0; margin-bottom: 6px; }
 form .field { margin-bottom: 14px; }
 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
 .duration { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
 
 input, select, textarea {
   font: inherit;
@@ -141,6 +141,8 @@ input, select, textarea {
   width: 100%;
   min-width: 0;
 }
+/* Einheitliche Höhe, damit Datums- und Auswahlfelder nebeneinander bündig sind */
+input:not([type="checkbox"]), select { height: 40px; }
 input:focus, select:focus, textarea:focus, .btn:focus-visible, .chip:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -405,6 +407,36 @@ kbd {
 .kanban-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; font-size: 0.8rem; }
 .kanban-meta .overdue { color: var(--danger); font-weight: 600; }
 .board-hint { margin: 0; }
+
+/* ---------- Tasks: Umschalter Board/Liste, Liste, Unteraufgaben ---------- */
+.tasks-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.segmented button {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+.task-table tbody tr:hover { background: var(--surface-2); }
+.task-table td:first-child { border-left: 4px solid var(--c); }
+.task-table .task-title { font-weight: 600; min-width: 200px; }
+.task-table tr.done .task-title { color: var(--muted); text-decoration: line-through; }
+.task-table td { vertical-align: middle; }
+.nowrap { white-space: nowrap; }
+.dots { display: inline-flex; gap: 2px; vertical-align: middle; }
+.subtask-progress { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.subtask-progress.complete { color: #a3e635; }
+.subtasks { list-style: none; margin: 0; padding: 0; }
+.subtasks li { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--border); }
+.subtasks .check { margin: 0; padding: 6px 0; color: var(--text); font-weight: 400; }
+.subtasks input:checked + span { color: var(--muted); text-decoration: line-through; }
+.subtask-add { display: flex; gap: 6px; margin-top: 8px; }
+.subtask-add input { padding: 4px 8px; font-size: 0.9rem; }
+dialog { max-height: calc(100vh - 32px); overflow-y: auto; }
 
 /* ---------- Kalender (FullCalendar) ---------- */
 #calendar {

@@ -129,7 +129,7 @@ class SupabaseDb {
 // ---------------------------------------------------------------------
 // Demo (localStorage)
 // ---------------------------------------------------------------------
-const DEMO_KEY = 'fourcast-zeit-demo-v6';
+const DEMO_KEY = 'fourcast-zeit-demo-v7';
 const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
 
 const DEMO_TAGS = [
@@ -198,14 +198,17 @@ function seedDemo() {
   ].map((e) => ({ id: crypto.randomUUID(), description: null, created_at: new Date().toISOString(), ...e }));
 
   const cards = [
-    ['backlog', 'Ideen für Level 4 sammeln', null, ['Woahbuilding'], 3, 'design'],
-    ['todo', 'Steam-Page Texte schreiben', 'demo-robin', ['Social Media'], 1, 'admin'],
-    ['todo', 'Hauptmenü-Musik', 'demo-robin', ['Sound'], 2, 'design'],
-    ['doing', 'Puzzle-Mechanik Spiegel', 'demo-alex', ['Coding', 'Puzzle Cooking'], 1, 'code'],
-    ['doing', 'Bugs im Level 2 prüfen', 'demo-sam', ['Testing'], 2, 'testing'],
-    ['done', 'Teamvertrag aufsetzen', 'demo-jo', ['Organisation'], 2, 'admin'],
-  ].map(([status, title, assignee, cardTags, priority, category], i) => ({
-    id: crypto.randomUUID(), status, title, assignee, tags: cardTags, priority, category, position: i,
+    ['backlog', 'Ideen für Level 4 sammeln', [], ['Woahbuilding'], 3, 'design', []],
+    ['todo', 'Steam-Page Texte schreiben', ['demo-robin', 'demo-jo'], ['Social Media'], 1, 'admin',
+      [['Kurzbeschreibung', true], ['Features auflisten', false], ['Screenshots auswählen', false]]],
+    ['todo', 'Hauptmenü-Musik', ['demo-robin'], ['Sound'], 2, 'design', []],
+    ['doing', 'Puzzle-Mechanik Spiegel', ['demo-alex'], ['Coding', 'Puzzle Cooking'], 1, 'code',
+      [['Prototyp', true], ['Kollisionen', true], ['Feinschliff', false]]],
+    ['doing', 'Bugs im Level 2 prüfen', ['demo-sam', 'demo-kim'], ['Testing'], 2, 'testing', []],
+    ['done', 'Teamvertrag aufsetzen', ['demo-jo'], ['Organisation'], 2, 'admin', []],
+  ].map(([status, title, assignees, cardTags, priority, category, subtasks], i) => ({
+    id: crypto.randomUUID(), status, title, assignees, tags: cardTags, priority, category, position: i,
+    subtasks: subtasks.map(([t, done]) => ({ title: t, done })),
     description: null, due_date: null, created_by: 'demo-jo', created_at: new Date().toISOString(),
   }));
 
@@ -332,7 +335,8 @@ class DemoDb {
 
   async addCard(card) {
     const row = {
-      id: crypto.randomUUID(), status: 'todo', position: 0, priority: 2, category: null, description: null, assignee: null,
+      id: crypto.randomUUID(), status: 'todo', position: 0, priority: 2, category: null, description: null,
+      assignees: [], subtasks: [],
       tags: [], due_date: null, created_by: this.user, created_at: new Date().toISOString(), ...card,
     };
     (this.data.cards ||= []).push(row);

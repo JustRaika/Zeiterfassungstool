@@ -1,4 +1,4 @@
-// Tab "Board": gemeinsames Kanban-Board mit Drag & Drop (Desktop) und Dialog (überall).
+// Tab "Tasks": gemeinsame Aufgaben als Kanban-Board (Drag & Drop) oder als Liste.
 
 import { $, esc, fmtDate, isoDate, personLabel, tagChips, toast } from './util.js';
 
@@ -19,12 +19,27 @@ const CATEGORIES = {
 };
 
 const PRIORITIES = { 1: 'Prio 1', 2: 'Prio 2', 3: 'Prio 3' };
+const VIEW_KEY = 'fourcast-tasks-view';
 
 let ctx;
 let cards = [];
 let editing = null; // Karte im Dialog, null = neu
 let dialogTags = new Set();
+let dialogAssignees = new Set();
+let dialogSubtasks = []; // [{ title, done }]
 let draggedId = null;
+let view = loadView(); // 'board' | 'list'
+
+// Gewählte Ansicht pro Browser merken (falls localStorage nicht geht: einfach Board)
+function loadView() {
+  try { return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'board'; } catch { return 'board'; }
+}
+
+function setView(next) {
+  view = next;
+  try { localStorage.setItem(VIEW_KEY, next); } catch { /* egal */ }
+  render();
+}
 
 export function init(c) {
   ctx = c;
@@ -34,17 +49,37 @@ export function init(c) {
   board.addEventListener('dragend', onDragEnd);
   board.addEventListener('dragover', onDragOver);
   board.addEventListener('drop', onDrop);
+  $('#task-list').addEventListener('click', (e) => {
+    const row = e.target.closest('[data-id]');
+    if (row) openDialog(cards.find((c) => c.id === row.dataset.id));
+  });
+  $('#tasks-view-toggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-view]');
+    if (btn) setView(btn.dataset.view);
+  });
+  $('#task-new').addEventListener('click', () => openDialog(null));
 
   const form = $('#card-form');
   form.addEventListener('submit', saveCard);
   $('#card-cancel').addEventListener('click', () => $('#card-dialog').close());
   $('#card-delete').addEventListener('click', deleteCard);
-  $('#card-tags').addEventListener('click', (e) => {
-    const chip = e.target.closest('button.chip');
-    if (!chip) return;
-    const name = chip.dataset.tag;
-    if (dialogTags.has(name)) dialogTags.delete(name); else dialogTags.add(name);
-    chip.setAttribute('aria-pressed', dialogTags.has(name));
+  $('#card-tags').addEventListener('click', (e) => toggleChip(e, dialogTags, 'tag'));
+  $('#card-assignees').addEventListener('click', (e) => toggleChip(e, dialogAssignees, 'member'));
+
+  // Unteraufgaben
+  $('#subtask-add').addEventListener('click', addSubtask);
+  $('#subtask-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addSubtask(); }
+  });
+  $('#subtask-list').addEventListener('change', (e) => {
+    const i = Number(e.target.dataset.done);
+    if (!Number.isNaN(i)) dialogSubtasks[i].done = e.target.checked;
+  });
+  $('#subtask-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-remove]');
+    if (!btn) return;
+    dialogSubtasks.splice(Number(btn.dataset.remove), 1);
+    renderSubtasks();
   });
 }
 
@@ -55,12 +90,53 @@ export async function show() {
   render();
 }
 
+function render() {
+  for (const btn of document.querySelectorAll('#tasks-view-toggle [data-view]')) {
+    btn.setAttribute('aria-pressed', btn.dataset.view === view);
+  }
+  $('#board').hidden = view !== 'board';
+  $('.board-hint').hidden = view !== 'board';
+  $('#task-list').hidden = view !== 'list';
+  if (view === 'board') renderBoard(); else renderList();
+}
+
+// ---------------------------------------------------------------------
+// Gemeinsame Bausteine
+// ---------------------------------------------------------------------
+// Karten einer Zelle (Status + Kategorie), sortiert
+function cardsIn(status, category) {
+  return cards
+    .filter((c) => c.status === status && (CATEGORIES[c.category] ? c.category : '') === category)
+    .sort((a, b) => a.position - b.position);
+}
+
+// Zuständige: bis zwei mit Namen, sonst nur farbige Punkte
+function assigneesHtml(c) {
+  const people = c.assignees.map((u) => ctx.memberMap.get(u)).filter(Boolean);
+  if (!people.length) return '<span class="muted">Niemand</span>';
+  if (people.length <= 2) return people.map(personLabel).join(' ');
+  return `<span class="dots" title="${esc(people.map((m) => m.display_name).join(', '))}">${
+    people.map((m) => `<span class="dot" style="--c:${esc(m.color)}"></span>`).join('')}</span> ${people.length} Personen`;
+}
+
+function subtaskProgress(c) {
+  if (!c.subtasks.length) return '';
+  const done = c.subtasks.filter((s) => s.done).length;
+  return `<span class="subtask-progress${done === c.subtasks.length ? ' complete' : ''}">☑ ${done}/${c.subtasks.length}</span>`;
+}
+
+function dueHtml(c) {
+  if (!c.due_date) return '';
+  const overdue = c.status !== 'done' && c.due_date < isoDate();
+  return `<span class="${overdue ? 'overdue' : 'muted'}">📅 ${esc(fmtDate(c.due_date))}</span>`;
+}
+
 // ---------------------------------------------------------------------
 // Board
 // ---------------------------------------------------------------------
 // Raster: Spalten = Status, Zeilen (Swimlanes) = Kategorie, getrennt durch eine farbige Linie.
 // Karten ohne Kategorie kommen in eine letzte Zeile, aber nur wenn es welche gibt.
-function render() {
+function renderBoard() {
   const lanes = Object.keys(CATEGORIES);
   if (cards.some((c) => !CATEGORIES[c.category])) lanes.push('');
 
@@ -80,27 +156,18 @@ function render() {
   $('#board').innerHTML = head + rows + COLUMNS.map(() => '<div class="kanban-col-foot"></div>').join('');
 }
 
-// Karten einer Zelle (Status + Kategorie), sortiert
-function cardsIn(status, category) {
-  return cards
-    .filter((c) => c.status === status && (CATEGORIES[c.category] ? c.category : '') === category)
-    .sort((a, b) => a.position - b.position);
-}
-
 function cardHtml(c) {
-  const assignee = ctx.memberMap.get(c.assignee);
-  const category = CATEGORIES[c.category];
-  const overdue = c.due_date && c.status !== 'done' && c.due_date < isoDate();
   return `<article class="kanban-card" draggable="true" data-id="${esc(c.id)}"
-      style="--c:${category?.color || 'var(--border)'}">
+      style="--c:${CATEGORIES[c.category]?.color || 'var(--border)'}">
     <div class="kanban-badges">
       <span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span>
+      ${subtaskProgress(c)}
     </div>
     <div class="kanban-title">${esc(c.title)}</div>
     ${c.tags.length ? `<div class="chips">${tagChips(c.tags, ctx.tagMap)}</div>` : ''}
     <div class="kanban-meta">
-      <span>${assignee ? personLabel(assignee) : '<span class="muted">Niemand</span>'}</span>
-      ${c.due_date ? `<span class="${overdue ? 'overdue' : 'muted'}">📅 ${esc(fmtDate(c.due_date))}</span>` : ''}
+      <span>${assigneesHtml(c)}</span>
+      ${dueHtml(c)}
     </div>
   </article>`;
 }
@@ -113,7 +180,39 @@ function onBoardClick(e) {
 }
 
 // ---------------------------------------------------------------------
-// Drag & Drop
+// Liste: nach Spalte, darin nach Kategorie und Reihenfolge wie auf dem Board
+// ---------------------------------------------------------------------
+function renderList() {
+  const statusOrder = COLUMNS.map(([s]) => s);
+  const catOrder = Object.keys(CATEGORIES);
+  const catIndex = (c) => (CATEGORIES[c.category] ? catOrder.indexOf(c.category) : catOrder.length);
+  const sorted = [...cards].sort((a, b) =>
+    statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status)
+    || catIndex(a) - catIndex(b)
+    || a.position - b.position);
+
+  if (!sorted.length) {
+    $('#task-list').innerHTML = '<p class="empty">Noch keine Tasks.</p>';
+    return;
+  }
+  const statusLabel = Object.fromEntries(COLUMNS);
+  $('#task-list').innerHTML = `<div class="table-wrap"><table class="entries task-table">
+    <thead><tr><th>Aufgabe</th><th>Spalte</th><th>Prio</th><th>Zuständig</th><th>Fällig</th><th>Unteraufgaben</th></tr></thead>
+    <tbody>${sorted.map((c) => `
+      <tr data-id="${esc(c.id)}" class="${c.status === 'done' ? 'done' : ''}"
+          style="--c:${CATEGORIES[c.category]?.color || 'var(--border)'}">
+        <td class="task-title">${esc(c.title)}</td>
+        <td class="nowrap">${statusLabel[c.status]}</td>
+        <td><span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span></td>
+        <td class="nowrap">${assigneesHtml(c)}</td>
+        <td class="nowrap">${dueHtml(c)}</td>
+        <td>${subtaskProgress(c)}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+// ---------------------------------------------------------------------
+// Drag & Drop (nur Board)
 // ---------------------------------------------------------------------
 function onDragStart(e) {
   const card = e.target.closest('.kanban-card');
@@ -176,12 +275,12 @@ async function onDrop(e) {
   if (card.status === status && card.position === position && (card.category || null) === category) return;
   const old = { status: card.status, position: card.position, category: card.category };
   Object.assign(card, { status, position, category });
-  render();
+  renderBoard();
   try {
     await ctx.db.updateCard(id, { status, position, category });
   } catch (err) {
     Object.assign(card, old);
-    render();
+    renderBoard();
     ctx.fail(err);
   }
 }
@@ -194,6 +293,33 @@ function dialogError(message) {
   $('#card-error').hidden = !message;
 }
 
+// Chip-Auswahl (Tags, Zuständige) an- und abwählen
+function toggleChip(e, set, key) {
+  const chip = e.target.closest('button.chip');
+  if (!chip) return;
+  const value = chip.dataset[key];
+  if (set.has(value)) set.delete(value); else set.add(value);
+  chip.setAttribute('aria-pressed', set.has(value));
+}
+
+function renderSubtasks() {
+  $('#subtask-list').innerHTML = dialogSubtasks.map((s, i) => `
+    <li>
+      <label class="check"><input type="checkbox" data-done="${i}" ${s.done ? 'checked' : ''}> <span>${esc(s.title)}</span></label>
+      <button type="button" class="icon-btn" data-remove="${i}" title="Entfernen">✕</button>
+    </li>`).join('');
+}
+
+function addSubtask() {
+  const input = $('#subtask-input');
+  const title = input.value.trim();
+  if (!title) return;
+  dialogSubtasks.push({ title, done: false });
+  input.value = '';
+  renderSubtasks();
+  input.focus();
+}
+
 function openDialog(card, status = 'todo') {
   editing = card;
   const form = $('#card-form');
@@ -201,27 +327,31 @@ function openDialog(card, status = 'todo') {
   dialogError('');
 
   form.status.innerHTML = COLUMNS.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
-  form.assignee.innerHTML = '<option value="">Niemand</option>' +
-    ctx.members.map((m) => `<option value="${esc(m.github_username)}">${esc(m.display_name)}</option>`).join('');
   // Priorität muss bei neuen Karten bewusst gewählt werden, daher kein Vorschlag
   form.priority.innerHTML = '<option value="" disabled>Bitte wählen …</option>' +
     Object.entries(PRIORITIES).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
   form.category.innerHTML = '<option value="">Keine</option>' +
     Object.entries(CATEGORIES).map(([value, c]) => `<option value="${value}">${c.label}</option>`).join('');
-  form.priority.value = card?.priority ? String(card.priority) : '';
-  form.category.value = card?.category || '';
 
   form.title.value = card?.title || '';
   form.description.value = card?.description || '';
+  form.priority.value = card?.priority ? String(card.priority) : '';
+  form.category.value = card?.category || '';
   form.status.value = card?.status || status;
-  form.assignee.value = card?.assignee || '';
   form.due_date.value = card?.due_date || '';
+
+  dialogAssignees = new Set(card?.assignees || []);
+  $('#card-assignees').innerHTML = ctx.members.map((m) =>
+    `<button type="button" class="chip" data-member="${esc(m.github_username)}" style="--c:${esc(m.color)}"
+      aria-pressed="${dialogAssignees.has(m.github_username)}">${esc(m.display_name)}</button>`).join('');
   dialogTags = new Set(card?.tags || []);
   $('#card-tags').innerHTML = ctx.tags.map((t) =>
     `<button type="button" class="chip" data-tag="${esc(t.name)}" style="--c:${esc(t.color)}"
       aria-pressed="${dialogTags.has(t.name)}">${esc(t.name)}</button>`).join('');
+  dialogSubtasks = structuredClone(card?.subtasks || []);
+  renderSubtasks();
 
-  $('#card-dialog-title').textContent = card ? 'Karte bearbeiten' : 'Neue Karte';
+  $('#card-dialog-title').textContent = card ? 'Task bearbeiten' : 'Neuer Task';
   $('#card-delete').hidden = !card;
   const creator = card && ctx.memberMap.get(card.created_by);
   $('#card-meta').textContent = creator ? `Angelegt von ${creator.display_name}` : '';
@@ -243,9 +373,10 @@ async function saveCard(e) {
     category: form.category.value || null,
     description: form.description.value.trim() || null,
     status,
-    assignee: form.assignee.value || null,
+    assignees: ctx.members.map((m) => m.github_username).filter((u) => dialogAssignees.has(u)),
     due_date: form.due_date.value || null,
     tags: ctx.tags.map((t) => t.name).filter((n) => dialogTags.has(n)),
+    subtasks: dialogSubtasks,
   };
   // Neue Karte oder Spalten-/Kategoriewechsel: ans Ende der Zelle
   if (!editing || editing.status !== status || (editing.category || null) !== payload.category) {
@@ -257,7 +388,7 @@ async function saveCard(e) {
     if (editing) await ctx.db.updateCard(editing.id, payload);
     else await ctx.db.addCard(payload);
     $('#card-dialog').close();
-    toast(editing ? 'Karte gespeichert.' : 'Karte angelegt.');
+    toast(editing ? 'Task gespeichert.' : 'Task angelegt.');
     await show();
   } catch (err) {
     dialogError(err.message || String(err));
@@ -265,11 +396,11 @@ async function saveCard(e) {
 }
 
 async function deleteCard() {
-  if (!editing || !confirm(`Karte „${editing.title}“ löschen?`)) return;
+  if (!editing || !confirm(`Task „${editing.title}“ löschen?`)) return;
   try {
     await ctx.db.deleteCard(editing.id);
     $('#card-dialog').close();
-    toast('Karte gelöscht.');
+    toast('Task gelöscht.');
     await show();
   } catch (err) {
     dialogError(err.message || String(err));

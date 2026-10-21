@@ -55,7 +55,7 @@
         <a href="#erfassen" data-tab="erfassen">Erfassen</a>
         <a href="#uebersicht" data-tab="uebersicht">Übersicht</a>
         <a href="#kalender" data-tab="kalender">Kalender</a>
-        <a href="#board" data-tab="board">Board</a>
+        <a href="#tasks" data-tab="tasks">Tasks</a>
       </nav>
       <div class="user">
         <span id="user-dot" class="dot"></span>
@@ -202,15 +202,25 @@
         </div>
       </section>
 
-      <!-- Kanban-Board -->
-      <section id="view-board" class="view" hidden>
-        <div class="kanban-legend">
-          <span class="legend-item" style="--c:#e879f9">Design</span>
-          <span class="legend-item" style="--c:#2dd4bf">Code</span>
-          <span class="legend-item" style="--c:#cbd5e1">Admin</span>
-          <span class="legend-item" style="--c:#a3e635">Testing</span>
+      <!-- Tasks: Kanban-Board oder Liste -->
+      <section id="view-tasks" class="view" hidden>
+        <div class="tasks-toolbar">
+          <div class="kanban-legend">
+            <span class="legend-item" style="--c:#e879f9">Design</span>
+            <span class="legend-item" style="--c:#2dd4bf">Code</span>
+            <span class="legend-item" style="--c:#cbd5e1">Admin</span>
+            <span class="legend-item" style="--c:#a3e635">Testing</span>
+          </div>
+          <div class="row">
+            <div id="tasks-view-toggle" class="segmented" role="group" aria-label="Ansicht">
+              <button type="button" data-view="board" aria-pressed="true">Board</button>
+              <button type="button" data-view="list" aria-pressed="false">Liste</button>
+            </div>
+            <button type="button" id="task-new" class="btn primary small">+ Task</button>
+          </div>
         </div>
         <div id="board" class="kanban"></div>
+        <div id="task-list" class="card" hidden></div>
         <p class="muted small board-hint">
           <span class="hint-mouse">Karten per Drag &amp; Drop verschieben oder anklicken zum Bearbeiten.</span>
           <span class="hint-touch">Karte antippen, um sie zu bearbeiten oder in eine andere Spalte zu verschieben.</span>
@@ -264,7 +274,7 @@
 
   <dialog id="card-dialog">
     <form id="card-form" novalidate>
-      <h2 id="card-dialog-title">Karte</h2>
+      <h2 id="card-dialog-title">Task</h2>
       <label class="field">Titel
         <input name="title" required maxlength="200">
       </label>
@@ -272,7 +282,7 @@
         <textarea name="description" rows="3" maxlength="2000"></textarea>
       </label>
       <div class="pair">
-        <label class="field">Priorität <span class="muted">(Pflicht)</span>
+        <label class="field">Priorität *
           <select name="priority" required></select>
         </label>
         <label class="field">Kategorie
@@ -283,13 +293,22 @@
         <label class="field">Spalte
           <select name="status"></select>
         </label>
-        <label class="field">Zuständig
-          <select name="assignee"></select>
+        <label class="field">Fällig am
+          <input type="date" name="due_date">
         </label>
       </div>
-      <label class="field">Fällig am
-        <input type="date" name="due_date">
-      </label>
+      <fieldset class="field">
+        <legend>Zuständig</legend>
+        <div id="card-assignees" class="chips"></div>
+      </fieldset>
+      <fieldset class="field">
+        <legend>Unteraufgaben</legend>
+        <ul id="subtask-list" class="subtasks"></ul>
+        <div class="subtask-add">
+          <input id="subtask-input" type="text" maxlength="200" placeholder="Neue Unteraufgabe …">
+          <button type="button" id="subtask-add" class="btn ghost small">+ Hinzufügen</button>
+        </div>
+      </fieldset>
       <fieldset class="field">
         <legend>Tags</legend>
         <div id="card-tags" class="chips"></div>

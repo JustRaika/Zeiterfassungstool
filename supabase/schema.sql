@@ -60,7 +60,6 @@ create table if not exists public.kanban_cards (
   description text,
   status      text not null default 'todo' check (status in ('backlog', 'todo', 'doing', 'done')),
   position    double precision not null default 0,   -- Reihenfolge innerhalb der Spalte
-  assignee    text references public.members (github_username) on update cascade on delete set null,
   tags        text[] not null default '{}',
   due_date    date,
   created_by  text references public.members (github_username) on update cascade on delete set null,
@@ -71,6 +70,17 @@ alter table public.kanban_cards add column if not exists priority smallint not n
   check (priority in (1, 2, 3));
 alter table public.kanban_cards add column if not exists category text
   check (category in ('code', 'design', 'admin', 'testing'));
+-- Mehrere Zuständige (GitHub-Usernamen) und Unteraufgaben [{"title": "...", "done": false}, ...]
+alter table public.kanban_cards add column if not exists assignees text[] not null default '{}';
+alter table public.kanban_cards add column if not exists subtasks jsonb not null default '[]';
+-- Früher gab es nur eine zuständige Person (Spalte assignee): übernehmen und Spalte entfernen
+do $$ begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'public' and table_name = 'kanban_cards' and column_name = 'assignee') then
+    update public.kanban_cards set assignees = array[assignee] where assignee is not null and assignees = '{}';
+    alter table public.kanban_cards drop column assignee;
+  end if;
+end $$;
 
 
 -- ---------------------------------------------------------------------
