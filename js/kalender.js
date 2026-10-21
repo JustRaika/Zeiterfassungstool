@@ -4,6 +4,7 @@ import { $, esc, fmtDate, hhmm, isoDate, toast } from './util.js';
 
 const HOUR_MS = 60 * 60 * 1000;
 const UPCOMING_COUNT = 5;
+const EVENT_COLOR = '#8ec5ff';
 
 // Kalendertage addieren (nicht 24 h, sonst stimmt es bei der Zeitumstellung nicht)
 function addDays(date, days) {
@@ -73,10 +74,9 @@ async function renderUpcoming() {
     return;
   }
   $('#upcoming').innerHTML = upcomingRows.map((r) => {
-    const color = ctx.memberMap.get(r.created_by)?.color || '#6b7280';
-    return `<li data-event="${esc(r.id)}" style="--c:${esc(color)}">
+    return `<li data-event="${esc(r.id)}" class="${r.is_milestone ? 'milestone' : ''}">
       <span class="when">${esc(eventWhen(r))}</span>
-      <span class="what"><b>${esc(r.title)}</b>${r.location ? ` <span class="muted">· ${esc(r.location)}</span>` : ''}</span>
+      <span class="what">${r.is_milestone ? '<span class="star">★</span> ' : ''}<b>${esc(r.title)}</b>${r.location ? ` <span class="muted">· ${esc(r.location)}</span>` : ''}</span>
       <span class="countdown muted">${esc(countdown(r, now))}</span>
     </li>`;
   }).join('');
@@ -153,19 +153,43 @@ function createCalendar() {
   calendar.render();
 }
 
+// Normale Termine pastellblau, Meilensteine mit schillerndem Verlauf (CSS-Klasse .milestone)
 function toCalendarEvent(row) {
-  const color = ctx.memberMap.get(row.created_by)?.color || '#6b7280';
   return {
     id: row.id,
-    title: row.title,
+    title: row.is_milestone ? `★ ${row.title}` : row.title,
     start: row.starts_at,
     end: row.ends_at || undefined,
     allDay: row.all_day,
-    backgroundColor: color,
-    borderColor: color,
+    backgroundColor: EVENT_COLOR,
+    borderColor: EVENT_COLOR,
     textColor: '#1c1c23', // dunkle Schrift auf den Pastellfarben
+    classNames: row.is_milestone ? ['milestone'] : [],
     extendedProps: { row },
   };
+}
+
+// Link, der den Termin im eigenen Google Kalender anlegt (mit dessen Erinnerungen aufs Handy)
+function googleCalendarUrl(row) {
+  const utc = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const day = (d) => isoDate(d).replace(/-/g, '');
+  const start = new Date(row.starts_at);
+  let dates;
+  if (row.all_day) {
+    const end = row.ends_at ? new Date(row.ends_at) : addDays(start, 1);
+    dates = `${day(start)}/${day(end)}`;
+  } else {
+    const end = row.ends_at ? new Date(row.ends_at) : new Date(start.getTime() + HOUR_MS);
+    dates = `${utc(start)}/${utc(end)}`;
+  }
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: row.title,
+    dates,
+    details: [row.description, 'Aus der Fourcast Zeiterfassung'].filter(Boolean).join('\n\n'),
+    location: row.location || '',
+  });
+  return `https://calendar.google.com/calendar/render?${params}`;
 }
 
 async function moveEvent(info) {
@@ -207,6 +231,7 @@ function openDialog(row, defaults = {}) {
 
   form.title.value = row?.title || '';
   form.all_day.checked = allDay;
+  form.is_milestone.checked = !!row?.is_milestone;
   form.start_date.value = isoDate(start);
   form.start_time.value = allDay ? '' : hhmm(start);
   form.end_date.value = end ? isoDate(end) : isoDate(start);
@@ -219,6 +244,8 @@ function openDialog(row, defaults = {}) {
   $('#event-delete').hidden = !row;
   const creator = row && ctx.memberMap.get(row.created_by);
   $('#event-meta').textContent = creator ? `Angelegt von ${creator.display_name}` : '';
+  $('#event-google').hidden = !row;
+  if (row) $('#event-google').href = googleCalendarUrl(row);
 
   $('#event-dialog').showModal();
   form.title.focus();
@@ -248,6 +275,7 @@ function readForm() {
   return {
     title,
     all_day: allDay,
+    is_milestone: form.is_milestone.checked,
     starts_at: start.toISOString(),
     ends_at: end ? end.toISOString() : null,
     location: form.location.value.trim() || null,

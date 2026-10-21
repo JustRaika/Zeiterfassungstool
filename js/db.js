@@ -103,12 +103,28 @@ class SupabaseDb {
   async deleteEvent(id) {
     check(await this.sb.from('events').delete().eq('id', id));
   }
+
+  async listCards() {
+    return check(await this.sb.from('kanban_cards').select('*').order('position'));
+  }
+
+  async addCard(card) {
+    return check(await this.sb.from('kanban_cards').insert(card).select().single());
+  }
+
+  async updateCard(id, patch) {
+    return check(await this.sb.from('kanban_cards').update(patch).eq('id', id).select().single());
+  }
+
+  async deleteCard(id) {
+    check(await this.sb.from('kanban_cards').delete().eq('id', id));
+  }
 }
 
 // ---------------------------------------------------------------------
 // Demo (localStorage)
 // ---------------------------------------------------------------------
-const DEMO_KEY = 'fourcast-zeit-demo-v3';
+const DEMO_KEY = 'fourcast-zeit-demo-v4';
 const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
 
 const DEMO_TAGS = [
@@ -176,11 +192,23 @@ function seedDemo() {
   const events = [
     { title: 'Weekly Sync', starts_at: at(2, 18), ends_at: at(2, 19), all_day: false, location: 'Discord', created_by: 'demo-jo' },
     { title: 'Playtest Session', starts_at: at(9, 14), ends_at: at(9, 17), all_day: false, location: 'Uni, Raum 2.14', created_by: 'demo-alex' },
-    { title: 'Deadline Vertical Slice', starts_at: at(16, 0), ends_at: null, all_day: true, location: null, created_by: 'demo-jo' },
+    { title: 'Deadline Vertical Slice', starts_at: at(16, 0), ends_at: null, all_day: true, location: null, created_by: 'demo-jo', is_milestone: true },
     { title: 'Weekly Sync', starts_at: at(-5, 18), ends_at: at(-5, 19), all_day: false, location: 'Discord', created_by: 'demo-jo' },
   ].map((e) => ({ id: crypto.randomUUID(), description: null, created_at: new Date().toISOString(), ...e }));
 
-  return { members, tags, entries, events };
+  const cards = [
+    ['backlog', 'Ideen für Level 4 sammeln', null, ['Woahbuilding']],
+    ['todo', 'Steam-Page Texte schreiben', 'demo-robin', ['Social Media']],
+    ['todo', 'Hauptmenü-Musik', 'demo-robin', ['Sound']],
+    ['doing', 'Puzzle-Mechanik Spiegel', 'demo-alex', ['Coding', 'Puzzle Cooking']],
+    ['doing', 'Felsen texturieren', 'demo-sam', ['Texturing']],
+    ['done', 'Teamvertrag aufsetzen', 'demo-jo', ['Organisation']],
+  ].map(([status, title, assignee, cardTags], i) => ({
+    id: crypto.randomUUID(), status, title, assignee, tags: cardTags, position: i, description: null,
+    due_date: null, created_by: 'demo-jo', created_at: new Date().toISOString(),
+  }));
+
+  return { members, tags, entries, events, cards };
 }
 
 class DemoDb {
@@ -290,6 +318,32 @@ class DemoDb {
 
   async deleteEvent(id) {
     this.data.events = this.data.events.filter((x) => x.id !== id);
+    this.save();
+  }
+
+  async listCards() {
+    return structuredClone(this.data.cards || []).sort((a, b) => a.position - b.position);
+  }
+
+  async addCard(card) {
+    const row = {
+      id: crypto.randomUUID(), status: 'todo', position: 0, description: null, assignee: null,
+      tags: [], due_date: null, created_by: this.user, created_at: new Date().toISOString(), ...card,
+    };
+    (this.data.cards ||= []).push(row);
+    this.save();
+    return structuredClone(row);
+  }
+
+  async updateCard(id, patch) {
+    const c = this.data.cards.find((x) => x.id === id);
+    Object.assign(c, patch);
+    this.save();
+    return structuredClone(c);
+  }
+
+  async deleteCard(id) {
+    this.data.cards = this.data.cards.filter((x) => x.id !== id);
     this.save();
   }
 }

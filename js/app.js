@@ -5,8 +5,9 @@ import { $, esc, toast } from './util.js';
 import * as erfassen from './erfassen.js';
 import * as uebersicht from './uebersicht.js';
 import * as kalender from './kalender.js';
+import * as kanban from './kanban.js';
 
-const VIEWS = { erfassen, uebersicht, kalender };
+const VIEWS = { erfassen, uebersicht, kalender, board: kanban };
 const REFRESH_AFTER_MS = 60_000;
 
 // Gemeinsamer Zustand, den alle Ansichten bekommen.

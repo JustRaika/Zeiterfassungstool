@@ -50,6 +50,22 @@ create table if not exists public.events (
   created_by  text references public.members (github_username) on update cascade on delete set null,
   created_at  timestamptz not null default now()
 );
+-- Meilensteine werden im Kalender besonders hervorgehoben.
+alter table public.events add column if not exists is_milestone boolean not null default false;
+
+-- Gemeinsames Kanban-Board.
+create table if not exists public.kanban_cards (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null check (char_length(title) between 1 and 200),
+  description text,
+  status      text not null default 'todo' check (status in ('backlog', 'todo', 'doing', 'done')),
+  position    double precision not null default 0,   -- Reihenfolge innerhalb der Spalte
+  assignee    text references public.members (github_username) on update cascade on delete set null,
+  tags        text[] not null default '{}',
+  due_date    date,
+  created_by  text references public.members (github_username) on update cascade on delete set null,
+  created_at  timestamptz not null default now()
+);
 
 
 -- ---------------------------------------------------------------------
@@ -109,6 +125,7 @@ grant execute on function public.keep_alive() to anon, authenticated;
 -- Neue Einträge/Termine gehören automatisch der eingeloggten Person.
 alter table public.time_entries alter column member set default public.current_member();
 alter table public.events alter column created_by set default public.current_member();
+alter table public.kanban_cards alter column created_by set default public.current_member();
 
 
 -- ---------------------------------------------------------------------
@@ -118,6 +135,7 @@ alter table public.members      enable row level security;
 alter table public.tags         enable row level security;
 alter table public.time_entries enable row level security;
 alter table public.events       enable row level security;
+alter table public.kanban_cards enable row level security;
 
 -- members: alle im Team sehen alle, ändern nur die eigene Zeile
 drop policy if exists "members_select" on public.members;
@@ -163,6 +181,13 @@ create policy "entries_delete_own" on public.time_entries
 -- events: gemeinsamer Kalender, alle im Team dürfen alles
 drop policy if exists "events_all" on public.events;
 create policy "events_all" on public.events
+  for all to authenticated
+  using (public.current_member() is not null)
+  with check (public.current_member() is not null);
+
+-- kanban_cards: gemeinsames Board, alle im Team dürfen alles
+drop policy if exists "kanban_all" on public.kanban_cards;
+create policy "kanban_all" on public.kanban_cards
   for all to authenticated
   using (public.current_member() is not null)
   with check (public.current_member() is not null);

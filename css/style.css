@@ -304,6 +304,96 @@ table.entries td.actions { white-space: nowrap; text-align: right; }
 .upcoming .countdown { white-space: nowrap; font-size: 0.8rem; grid-row: 1; grid-column: 2; }
 .upcoming .what { grid-column: 1 / -1; }
 
+/* ---------- Meilensteine: schillernder Pastell-Verlauf ---------- */
+:root { --milestone: linear-gradient(120deg, #f5a9cb 0%, #c4a7f5 35%, #8ec5ff 68%, #a8f0d8 100%); }
+#calendar .fc-h-event.milestone, #calendar .fc-v-event.milestone {
+  background: var(--milestone) !important;
+  border: 0;
+  box-shadow: 0 0 10px rgb(196 167 245 / 0.45);
+  font-weight: 600;
+}
+#calendar .fc-daygrid-dot-event.milestone .fc-daygrid-event-dot,
+#calendar .fc-list-event.milestone .fc-list-event-dot { border-color: #c4a7f5; }
+.upcoming li.milestone { position: relative; border-left-color: transparent; }
+.upcoming li.milestone::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--milestone);
+}
+.star { background: var(--milestone); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.checks { gap: 20px; }
+.checks .check { margin-bottom: 14px; }
+.google-link { color: var(--accent); font-size: 0.9rem; text-decoration: none; }
+.google-link:hover { text-decoration: underline; }
+
+/* ---------- Leertaste-Hinweis (nur mit Tastatur sinnvoll) ---------- */
+.key-hint { margin: 12px 0 0; }
+kbd {
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--text);
+}
+.hint-touch { display: none; }
+@media (hover: none) {
+  .key-hint, .hint-mouse { display: none; }
+  .hint-touch { display: inline; }
+}
+
+/* ---------- Kanban-Board ---------- */
+.kanban { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 16px; align-items: start; }
+.kanban-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kanban-col-head { display: flex; justify-content: space-between; align-items: center; }
+.kanban-col-head h2 { margin: 0; font-size: 0.9rem; }
+.kanban-col-head .count { font-family: var(--font-text); font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
+.kanban-col-head .icon-btn { font-size: 1.1rem; line-height: 1; padding: 2px 8px; }
+.kanban-list { display: flex; flex-direction: column; gap: 8px; min-height: 60px; border-radius: 8px; }
+.kanban-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--c, var(--border));
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: var(--cursor), grab;
+}
+.kanban-card:hover { border-color: #4a4a58; border-left-color: var(--c, #4a4a58); }
+.kanban-card.dragging { opacity: 0.35; }
+.kanban-card.drop-before { box-shadow: 0 -3px 0 var(--accent); }
+.kanban-list.drop-end { box-shadow: inset 0 -3px 0 var(--accent); }
+.kanban-title { font-weight: 600; overflow-wrap: anywhere; }
+.kanban-col[data-status="done"] .kanban-title { color: var(--muted); text-decoration: line-through; }
+.kanban-card .chips { gap: 4px; }
+.kanban-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; font-size: 0.8rem; }
+.kanban-meta .overdue { color: var(--danger); font-weight: 600; }
+.kanban-empty {
+  margin: 0;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.board-hint { margin: 0; }
+
 /* ---------- Kalender (FullCalendar) ---------- */
 #calendar {
   --fc-border-color: var(--border);
@@ -359,7 +449,15 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
 
 /* ---------- Mobil ---------- */
 @media (max-width: 1000px) {
+  /* Kopfzeile: Tabs in eine eigene Zeile */
+  .topbar { flex-wrap: wrap; row-gap: 8px; }
+  .topbar .brand { flex: 1; }
+  .tabs { order: 3; width: 100%; margin: 0; }
+  .tabs a { flex: 1; text-align: center; }
   .kalender-grid { grid-template-columns: 1fr; }
+  /* Board: Spalten seitlich wischen */
+  .kanban { grid-template-columns: repeat(4, minmax(260px, 80vw)); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
+  .kanban-col { scroll-snap-align: start; }
 }
 
 @media (max-width: 800px) {

@@ -55,6 +55,7 @@
         <a href="#erfassen" data-tab="erfassen">Erfassen</a>
         <a href="#uebersicht" data-tab="uebersicht">Übersicht</a>
         <a href="#kalender" data-tab="kalender">Kalender</a>
+        <a href="#board" data-tab="board">Board</a>
       </nav>
       <div class="user">
         <span id="user-dot" class="dot"></span>
@@ -86,6 +87,7 @@
               <button id="timer-discard" class="btn ghost" hidden>Verwerfen</button>
             </div>
             <ul id="timer-stamps" class="stamps"></ul>
+            <p class="muted small key-hint"><kbd>Leertaste</kbd> Start / Pause</p>
           </div>
 
           <form id="entry-form" class="card" novalidate>
@@ -199,6 +201,15 @@
           </aside>
         </div>
       </section>
+
+      <!-- Kanban-Board -->
+      <section id="view-board" class="view" hidden>
+        <div id="board" class="kanban"></div>
+        <p class="muted small board-hint">
+          <span class="hint-mouse">Karten per Drag &amp; Drop verschieben oder anklicken zum Bearbeiten.</span>
+          <span class="hint-touch">Karte antippen, um sie zu bearbeiten oder in eine andere Spalte zu verschieben.</span>
+        </p>
+      </section>
     </main>
   </div>
 
@@ -208,7 +219,10 @@
       <label class="field">Titel
         <input name="title" required maxlength="120">
       </label>
-      <label class="check"><input type="checkbox" name="all_day"> Ganztägig</label>
+      <div class="row checks">
+        <label class="check"><input type="checkbox" name="all_day"> Ganztägig</label>
+        <label class="check"><input type="checkbox" name="is_milestone"> ★ Meilenstein</label>
+      </div>
       <div class="pair">
         <label class="field">Start
           <input type="date" name="start_date" required>
@@ -232,11 +246,46 @@
         <textarea name="description" rows="3" maxlength="1000"></textarea>
       </label>
       <p id="event-meta" class="muted small"></p>
+      <p><a id="event-google" class="google-link" href="#" target="_blank" rel="noopener" hidden>📅 In Google Kalender übernehmen</a></p>
       <p id="event-error" class="error-text small" hidden></p>
       <div class="row">
         <button type="submit" class="btn primary">Speichern</button>
         <button type="button" id="event-delete" class="btn danger">Löschen</button>
         <button type="button" id="event-cancel" class="btn ghost">Abbrechen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="card-dialog">
+    <form id="card-form" novalidate>
+      <h2 id="card-dialog-title">Karte</h2>
+      <label class="field">Titel
+        <input name="title" required maxlength="200">
+      </label>
+      <label class="field">Beschreibung
+        <textarea name="description" rows="3" maxlength="2000"></textarea>
+      </label>
+      <div class="pair">
+        <label class="field">Spalte
+          <select name="status"></select>
+        </label>
+        <label class="field">Zuständig
+          <select name="assignee"></select>
+        </label>
+      </div>
+      <label class="field">Fällig am
+        <input type="date" name="due_date">
+      </label>
+      <fieldset class="field">
+        <legend>Tags</legend>
+        <div id="card-tags" class="chips"></div>
+      </fieldset>
+      <p id="card-meta" class="muted small"></p>
+      <p id="card-error" class="error-text small" hidden></p>
+      <div class="row">
+        <button type="submit" class="btn primary">Speichern</button>
+        <button type="button" id="card-delete" class="btn danger">Löschen</button>
+        <button type="button" id="card-cancel" class="btn ghost">Abbrechen</button>
       </div>
     </form>
   </dialog>

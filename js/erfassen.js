@@ -32,6 +32,19 @@ export function init(c) {
     chip.setAttribute('aria-pressed', selectedTags.has(name));
   });
   $('#my-entries').addEventListener('click', onListClick);
+  document.addEventListener('keydown', onSpace);
+}
+
+// Leertaste im Erfassen-Tab: Start, Pause, Weiter. Stoppen bleibt bewusst ein Klick.
+function onSpace(e) {
+  if (e.code !== 'Space' || e.repeat || ctx.currentTab !== 'erfassen') return;
+  if (e.target.closest('input, textarea, select, button, a, [contenteditable]')) return;
+  if (document.querySelector('dialog[open]')) return;
+  e.preventDefault();
+  const state = timerState(segments());
+  if (state === 'idle') startTimer();
+  else if (state === 'running') pauseTimer();
+  else resumeTimer();
 }
 
 export function show() {
