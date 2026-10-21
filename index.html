@@ -82,7 +82,7 @@
               <button id="timer-start" class="btn primary">▶ Start</button>
               <button id="timer-pause" class="btn primary" hidden>⏸ Pause</button>
               <button id="timer-resume" class="btn primary" hidden>▶ Weiter</button>
-              <button id="timer-stop" class="btn ghost" hidden>■ Stop &amp; eintragen</button>
+              <button id="timer-stop" class="btn stop" hidden>■ Stop &amp; eintragen</button>
               <button id="timer-discard" class="btn ghost" hidden>Verwerfen</button>
             </div>
             <ul id="timer-stamps" class="stamps"></ul>
@@ -185,16 +185,18 @@
 
       <!-- Kalender -->
       <section id="view-kalender" class="view" hidden>
-        <div class="card">
-          <h2>Nächste Termine</h2>
-          <ul id="upcoming" class="upcoming"></ul>
-        </div>
-        <div class="card">
-          <div class="card-head">
-            <h2>Gemeinsame Termine</h2>
-            <button id="event-new" class="btn primary small">+ Termin</button>
+        <div class="grid kalender-grid">
+          <div class="card">
+            <div class="card-head">
+              <h2>Gemeinsame Termine</h2>
+              <button id="event-new" class="btn primary small">+ Termin</button>
+            </div>
+            <div id="calendar"></div>
           </div>
-          <div id="calendar"></div>
+          <aside class="card">
+            <h2>Nächste Termine</h2>
+            <ul id="upcoming" class="upcoming"></ul>
+          </aside>
         </div>
       </section>
     </main>

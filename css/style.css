@@ -59,11 +59,12 @@ code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-
 .error-text { text-align: left; white-space: pre-wrap; color: var(--danger); font-size: 0.85rem; }
 
 .brand { font-family: var(--font-text); font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
-.brand .wordmark { font-family: var(--font-wordmark); font-weight: 600; letter-spacing: -0.02em; color: var(--text); }
+/* Schriftzug: „Fourcast“ in Unbounded, „Zeiterfassung“ in der Systemschrift, beides hell */
+.brand span { font-weight: 400; color: #e4e4ec; }
+.brand .wordmark { font-family: var(--font-wordmark); font-weight: 600; letter-spacing: -0.02em; color: #f6f6fa; }
 .login-card .brand { justify-content: center; }
 .logo { width: 32px; height: 32px; }
 .login-logo { width: 96px; height: 96px; display: block; margin: 0 auto 12px; }
-.brand span { font-weight: 400; color: var(--muted); }
 
 /* ---------- Kopfzeile ---------- */
 .topbar {
@@ -81,11 +82,11 @@ code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-
 .tabs a {
   padding: 6px 14px;
   border-radius: 999px;
-  color: var(--muted);
+  color: #d6d6de;
   text-decoration: none;
   font-weight: 500;
 }
-.tabs a:hover { color: var(--text); background: var(--surface-2); }
+.tabs a:hover { color: #ffffff; background: var(--surface-2); }
 .tabs a.active { color: var(--accent-text); background: var(--accent); }
 .user { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--muted)); flex: none; display: inline-block; }
@@ -165,6 +166,7 @@ textarea { resize: vertical; }
 .btn.primary { background: var(--accent); color: var(--accent-text); }
 .btn.ghost { background: transparent; border-color: var(--border); }
 .btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn.stop { background: var(--danger); color: #1c1c23; }
 .btn.small { padding: 4px 10px; font-size: 0.85rem; }
 .icon-btn {
   border: 0;
@@ -282,14 +284,15 @@ table.entries td.actions { white-space: nowrap; text-align: right; }
   color: var(--accent);
 }
 
-/* ---------- Nächste Termine ---------- */
-.upcoming { list-style: none; margin: 0; padding: 0; }
+/* ---------- Nächste Termine (rechts neben dem Kalender, mobil darunter) ---------- */
+.kalender-grid { grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }
+.upcoming { list-style: none; margin: 0; padding: 0; font-size: 0.9rem; }
 .upcoming li {
   display: grid;
-  grid-template-columns: minmax(150px, 220px) 1fr auto;
-  gap: 4px 12px;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
   align-items: baseline;
-  padding: 8px 0 8px 12px;
+  padding: 8px 4px 8px 10px;
   border-top: 1px solid var(--border);
   border-left: 3px solid var(--c, var(--accent));
   cursor: var(--cursor), pointer;
@@ -298,7 +301,8 @@ table.entries td.actions { white-space: nowrap; text-align: right; }
 .upcoming li:hover { background: var(--surface-2); }
 .upcoming li.empty { border-left: 0; padding-left: 0; cursor: default; }
 .upcoming .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.upcoming .countdown { white-space: nowrap; font-size: 0.85rem; }
+.upcoming .countdown { white-space: nowrap; font-size: 0.8rem; grid-row: 1; grid-column: 2; }
+.upcoming .what { grid-column: 1 / -1; }
 
 /* ---------- Kalender (FullCalendar) ---------- */
 #calendar {
@@ -318,7 +322,7 @@ table.entries td.actions { white-space: nowrap; text-align: right; }
   font-size: 0.9rem;
 }
 #calendar .fc-button-active { color: var(--accent-text); }
-#calendar .fc-toolbar-title { font-size: 1.1rem; }
+#calendar .fc-toolbar-title { font-size: 1.1rem; font-family: var(--font-text); font-weight: 600; }
 #calendar a { color: inherit; text-decoration: none; }
 #calendar .fc-event { cursor: pointer; }
 
@@ -354,6 +358,10 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
 #toast.error { background: var(--danger); color: #fff; }
 
 /* ---------- Mobil ---------- */
+@media (max-width: 1000px) {
+  .kalender-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 800px) {
   .erfassen-grid, .grid.two { grid-template-columns: 1fr; }
 }
@@ -372,8 +380,6 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
   .entry-list .comment { grid-column: 1 / -1; grid-row: 3; }
   .entry-list .actions { grid-column: 3; grid-row: 1; }
   #user-name { display: none; }
-  .upcoming li { grid-template-columns: 1fr auto; }
-  .upcoming .what { grid-column: 1 / -1; grid-row: 2; }
   #calendar .fc-toolbar { flex-wrap: wrap; gap: 8px; }
   #calendar .fc-toolbar-title { font-size: 1rem; }
 }
