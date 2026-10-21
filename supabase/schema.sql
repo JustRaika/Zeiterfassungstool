@@ -1,8 +1,5 @@
 -- =====================================================================
 -- Fourcast Zeiterfassung – Datenbank-Schema für Supabase
---
--- Einmal komplett im Supabase SQL Editor ausführen.
--- VORHER: unten bei "TEAM" eure 5 GitHub-Usernamen eintragen.
 -- =====================================================================
 
 
@@ -175,7 +172,6 @@ create policy "events_all" on public.events
 -- Startdaten
 -- ---------------------------------------------------------------------
 
--- TEAM: hier eure GitHub-Usernamen (genau wie auf github.com) und Anzeigenamen eintragen.
 insert into public.members (github_username, display_name, color) values
   ('JustRaika',          'Nika',   '#8ec5ff'),  -- pastellblau
   ('JanSchwegler',       'Jan',    '#c4a7f5'),  -- pastellviolett
