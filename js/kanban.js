@@ -11,10 +11,11 @@ const COLUMNS = [
 
 // Kategorie bestimmt die Randfarbe (bewusst anders als die Personenfarben)
 export const CATEGORIES = {
+  // Reihenfolge = Reihenfolge der Zeilen (Swimlanes) auf dem Board
+  design: { label: 'Design', color: '#e879f9' },   // Fuchsia
   code: { label: 'Code', color: '#2dd4bf' },       // Türkis
-  design: { label: 'Design', color: '#a3e635' },   // Limette
   admin: { label: 'Admin', color: '#cbd5e1' },     // Silber
-  testing: { label: 'Testing', color: '#f87171' }, // Rot
+  testing: { label: 'Testing', color: '#a3e635' }, // Limette
 };
 
 const PRIORITIES = { 1: 'Prio 1', 2: 'Prio 2', 3: 'Prio 3' };
@@ -58,23 +59,33 @@ export async function show() {
 // ---------------------------------------------------------------------
 // Board
 // ---------------------------------------------------------------------
+// Raster: Spalten = Status, Zeilen (Swimlanes) = Kategorie, getrennt durch eine farbige Linie.
+// Karten ohne Kategorie kommen in eine letzte Zeile, aber nur wenn es welche gibt.
 function render() {
-  $('#board').innerHTML = COLUMNS.map(([status, label]) => {
-    const colCards = cardsIn(status);
-    return `<section class="kanban-col" data-status="${status}">
-      <header class="kanban-col-head">
-        <h2>${label} <span class="count">${colCards.length}</span></h2>
-        <button class="icon-btn" data-add="${status}" title="Karte hinzufügen">+</button>
-      </header>
-      <div class="kanban-list" data-status="${status}">
-        ${colCards.map(cardHtml).join('') || '<p class="kanban-empty">Hierher ziehen</p>'}
-      </div>
-    </section>`;
-  }).join('');
+  const lanes = Object.keys(CATEGORIES);
+  if (cards.some((c) => !CATEGORIES[c.category])) lanes.push('');
+
+  const head = COLUMNS.map(([status, label]) => `
+    <header class="kanban-col-head">
+      <h2>${label} <span class="count">${cards.filter((c) => c.status === status).length}</span></h2>
+      <button class="icon-btn" data-add="${status}" title="Karte hinzufügen">+</button>
+    </header>`).join('');
+
+  const rows = lanes.map((category) => `
+    <div class="kanban-lane-sep" style="--c:${CATEGORIES[category]?.color || 'var(--border)'}"></div>
+    ${COLUMNS.map(([status]) => `
+      <div class="kanban-list" data-status="${status}" data-category="${category}">
+        ${cardsIn(status, category).map(cardHtml).join('')}
+      </div>`).join('')}`).join('');
+
+  $('#board').innerHTML = head + rows + COLUMNS.map(() => '<div class="kanban-col-foot"></div>').join('');
 }
 
-function cardsIn(status) {
-  return cards.filter((c) => c.status === status).sort((a, b) => a.position - b.position);
+// Karten einer Zelle (Status + Kategorie), sortiert
+function cardsIn(status, category) {
+  return cards
+    .filter((c) => c.status === status && (CATEGORIES[c.category] ? c.category : '') === category)
+    .sort((a, b) => a.position - b.position);
 }
 
 function cardHtml(c) {
@@ -85,7 +96,6 @@ function cardHtml(c) {
       style="--c:${category?.color || 'var(--border)'}">
     <div class="kanban-badges">
       <span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span>
-      ${category ? `<span class="cat">${category.label}</span>` : ''}
     </div>
     <div class="kanban-title">${esc(c.title)}</div>
     ${c.tags.length ? `<div class="chips">${tagChips(c.tags, ctx.tagMap)}</div>` : ''}
@@ -149,10 +159,11 @@ async function onDrop(e) {
   e.preventDefault();
   const id = draggedId;
   const status = list.dataset.status;
+  const category = list.dataset.category || null; // Zeile wechseln = Kategorie wechseln
   const beforeEl = dropTarget(list, e.clientY);
   clearDropMarkers();
 
-  const colCards = cardsIn(status).filter((c) => c.id !== id);
+  const colCards = cardsIn(status, list.dataset.category).filter((c) => c.id !== id);
   const idx = beforeEl ? colCards.findIndex((c) => c.id === beforeEl.dataset.id) : colCards.length;
   const prev = colCards[idx - 1];
   const next = colCards[idx];
@@ -163,12 +174,12 @@ async function onDrop(e) {
   else position = 0;
 
   const card = cards.find((c) => c.id === id);
-  if (card.status === status && card.position === position) return;
-  const old = { status: card.status, position: card.position };
-  Object.assign(card, { status, position });
+  if (card.status === status && card.position === position && (card.category || null) === category) return;
+  const old = { status: card.status, position: card.position, category: card.category };
+  Object.assign(card, { status, position, category });
   render();
   try {
-    await ctx.db.updateCard(id, { status, position });
+    await ctx.db.updateCard(id, { status, position, category });
   } catch (err) {
     Object.assign(card, old);
     render();
@@ -238,10 +249,10 @@ async function saveCard(e) {
     due_date: form.due_date.value || null,
     tags: ctx.tags.map((t) => t.name).filter((n) => dialogTags.has(n)),
   };
-  // Neue Karte oder Spaltenwechsel: ans Ende der Spalte
-  if (!editing || editing.status !== status) {
-    const col = cardsIn(status).filter((c) => c.id !== editing?.id);
-    payload.position = col.length ? col.at(-1).position + 1 : 0;
+  // Neue Karte oder Spalten-/Kategoriewechsel: ans Ende der Zelle
+  if (!editing || editing.status !== status || (editing.category || null) !== payload.category) {
+    const cell = cardsIn(status, payload.category || '').filter((c) => c.id !== editing?.id);
+    payload.position = cell.length ? cell.at(-1).position + 1 : 0;
   }
 
   try {

@@ -348,21 +348,38 @@ kbd {
 }
 
 /* ---------- Kanban-Board ---------- */
-.kanban { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 16px; align-items: start; }
-.kanban-col {
+/* Raster: Spalten = Status, Zeilen = Kategorien. Jede Spalte wirkt wie eine Karte
+   (Kopf, Zellen, Fuss), die Kategorie-Zeilen trennt eine farbige Linie über alle Spalten. */
+.kanban { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); column-gap: 16px; }
+.kanban-col-head, .kanban-list, .kanban-col-foot {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  border-top: 0;
+  border-bottom: 0;
+  padding: 0 12px;
 }
-.kanban-col-head { display: flex; justify-content: space-between; align-items: center; }
+.kanban-col-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding-top: 12px;
+  padding-bottom: 4px;
+}
+.kanban-col-foot { border-bottom: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); height: 12px; }
 .kanban-col-head h2 { margin: 0; font-size: 0.9rem; }
 .kanban-col-head .count { font-family: var(--font-text); font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
 .kanban-col-head .icon-btn { font-size: 1.1rem; line-height: 1; padding: 2px 8px; }
-.kanban-list { display: flex; flex-direction: column; gap: 8px; min-height: 60px; border-radius: 8px; }
+.kanban-lane-sep {
+  grid-column: 1 / -1;
+  height: 2px;
+  margin: 6px 0;
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0.75;
+}
+.kanban-list { display: flex; flex-direction: column; gap: 8px; min-height: 44px; padding-top: 4px; padding-bottom: 4px; }
 .kanban-card {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -384,24 +401,14 @@ kbd {
 .prio-1 { background: var(--text); border-color: var(--text); color: #1c1c23; }
 .prio-2 { border-color: var(--text); color: var(--text); }
 .prio-3 { color: var(--muted); }
-.cat { color: var(--c); }
 .kanban-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--muted); }
 .legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .legend-item::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--c); }
 .kanban-title { font-weight: 600; overflow-wrap: anywhere; }
-.kanban-col[data-status="done"] .kanban-title { color: var(--muted); text-decoration: line-through; }
+.kanban-list[data-status="done"] .kanban-title { color: var(--muted); text-decoration: line-through; }
 .kanban-card .chips { gap: 4px; }
 .kanban-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; font-size: 0.8rem; }
 .kanban-meta .overdue { color: var(--danger); font-weight: 600; }
-.kanban-empty {
-  margin: 0;
-  padding: 16px 0;
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--muted);
-  border: 1px dashed var(--border);
-  border-radius: 8px;
-}
 .board-hint { margin: 0; }
 
 /* ---------- Kalender (FullCalendar) ---------- */
@@ -467,7 +474,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
   .kalender-grid { grid-template-columns: 1fr; }
   /* Board: Spalten seitlich wischen */
   .kanban { grid-template-columns: repeat(4, minmax(260px, 80vw)); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; }
-  .kanban-col { scroll-snap-align: start; }
+  .kanban-col-head { scroll-snap-align: start; }
 }
 
 @media (max-width: 800px) {

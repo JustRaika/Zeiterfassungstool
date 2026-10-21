@@ -124,7 +124,7 @@ class SupabaseDb {
 // ---------------------------------------------------------------------
 // Demo (localStorage)
 // ---------------------------------------------------------------------
-const DEMO_KEY = 'fourcast-zeit-demo-v5';
+const DEMO_KEY = 'fourcast-zeit-demo-v6';
 const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
 
 const DEMO_TAGS = [
