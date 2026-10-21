@@ -17,9 +17,9 @@ export function init(c) {
   form = $('#entry-form');
   form.date.value = isoDate();
 
-  $('#timer-start').addEventListener('click', startTimer);
-  $('#timer-pause').addEventListener('click', pauseTimer);
-  $('#timer-resume').addEventListener('click', resumeTimer);
+  $('#timer-start').addEventListener('click', () => toggleTimer('idle'));
+  $('#timer-pause').addEventListener('click', () => toggleTimer('running'));
+  $('#timer-resume').addEventListener('click', () => toggleTimer('paused'));
   $('#timer-stop').addEventListener('click', stopTimer);
   $('#timer-discard').addEventListener('click', discardTimer);
   form.addEventListener('submit', saveEntry);
@@ -41,10 +41,7 @@ function onSpace(e) {
   if (e.target.closest('input, textarea, select, button, a, [contenteditable]')) return;
   if (document.querySelector('dialog[open]')) return;
   e.preventDefault();
-  const state = timerState(segments());
-  if (state === 'idle') startTimer();
-  else if (state === 'running') pauseTimer();
-  else resumeTimer();
+  toggleTimer();
 }
 
 export function show() {
@@ -147,10 +144,18 @@ function renderTimer() {
   if (state !== 'idle') ticker = setInterval(tick, 1000);
 }
 
-// Liste der Stempelungen: Arbeitsabschnitte und Pausen dazwischen
+// Liste der Stempelungen: Arbeitsabschnitte und Pausen dazwischen.
+// Das DOM wird nur angefasst, wenn sich der angezeigte Text wirklich ändert.
+let lastStampsHtml = null;
 function renderStamps(segs, state, now) {
-  const el = $('#timer-stamps');
-  if (!segs.length) { el.innerHTML = ''; return; }
+  const html = stampsHtml(segs, state, now);
+  if (html === lastStampsHtml) return;
+  lastStampsHtml = html;
+  $('#timer-stamps').innerHTML = html;
+}
+
+function stampsHtml(segs, state, now) {
+  if (!segs.length) return '';
   const rows = [];
   let pauseTotal = 0;
   segs.forEach((s, i) => {
@@ -166,8 +171,17 @@ function renderStamps(segs, state, now) {
     pauseTotal += pause;
     rows.push(`<li class="stamp-pause">⏸ Pause seit ${hhmm(segs.at(-1).end)} <span>${fmtSpan(pause)}</span></li>`);
   }
-  el.innerHTML = rows.join('') +
+  return rows.join('') +
     (pauseTotal ? `<li class="stamp-total">Pausen gesamt <span>${fmtSpan(pauseTotal)}</span></li>` : '');
+}
+
+// Vor jeder Timer-Aktion den aktuellen Stand aus der Datenbank holen, damit ein
+// veralteter Tab keine Stempelungen eines anderen Geräts überschreibt.
+async function freshSegments() {
+  const member = await ctx.db.getMember(ctx.me.github_username);
+  ctx.me = member;
+  ctx.memberMap.set(member.github_username, member);
+  return segments();
 }
 
 async function setTimer(segs) {
@@ -178,33 +192,30 @@ async function setTimer(segs) {
   renderTimer();
 }
 
-async function startTimer() {
+// Start, Pause oder Weiter – je nach aktuellem Zustand.
+// expected: Zustand, den der geklickte Knopf voraussetzt (Leertaste: egal).
+async function toggleTimer(expected) {
   try {
-    await setTimer([{ start: new Date(), end: null }]);
-  } catch (err) { ctx.fail(err); }
-}
-
-async function pauseTimer() {
-  const segs = segments();
-  if (timerState(segs) !== 'running') return;
-  segs.at(-1).end = new Date();
-  try {
-    await setTimer(segs);
-  } catch (err) { ctx.fail(err); }
-}
-
-async function resumeTimer() {
-  const segs = segments();
-  if (timerState(segs) !== 'paused') return;
-  segs.push({ start: new Date(), end: null });
-  try {
+    const segs = await freshSegments();
+    const state = timerState(segs);
+    if (expected && state !== expected) {
+      renderTimer();
+      toast('Der Timer wurde inzwischen auf einem anderen Gerät geändert.');
+      return;
+    }
+    // Läuft er, wird der Abschnitt beendet (Pause), sonst beginnt ein neuer (Start/Weiter)
+    if (state === 'running') segs.at(-1).end = new Date();
+    else segs.push({ start: new Date(), end: null });
     await setTimer(segs);
   } catch (err) { ctx.fail(err); }
 }
 
 async function stopTimer() {
-  const segs = segments();
-  if (!segs.length) return;
+  let segs;
+  try {
+    segs = await freshSegments();
+  } catch (err) { ctx.fail(err); return; }
+  if (!segs.length) { renderTimer(); return; }
   const start = segs[0].start;
   let minutes = Math.max(1, Math.round(workMs(segs) / 60000));
   try {

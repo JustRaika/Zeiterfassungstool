@@ -40,15 +40,15 @@ export function init(c) {
 }
 
 export function show() {
-  if (!calendar) createCalendar();
-  refresh();
+  if (!calendar) createCalendar(); // lädt die Termine beim ersten Anzeigen selbst
+  else refresh();
   calendar.updateSize();
 }
 
-// Kalender und Liste der nächsten Termine neu laden
+// Termine neu laden: eine Abfrage füllt Kalender und Liste der nächsten Termine
+// (siehe events-Quelle in createCalendar)
 function refresh() {
   calendar.refetchEvents();
-  renderUpcoming();
 }
 
 // ---------------------------------------------------------------------
@@ -56,12 +56,7 @@ function refresh() {
 // ---------------------------------------------------------------------
 let upcomingRows = [];
 
-async function renderUpcoming() {
-  let rows;
-  try {
-    rows = await ctx.db.listEvents();
-  } catch (err) { ctx.fail(err); return; }
-
+function renderUpcoming(rows) {
   const now = new Date();
   // Noch nicht vorbei: Ende (oder Start, wenn es kein Ende gibt) liegt in der Zukunft
   upcomingRows = rows
@@ -126,7 +121,10 @@ function createCalendar() {
     eventTimeFormat: { hour: '2-digit', minute: '2-digit' },
     slotMinTime: '07:00:00',
     events: (info, success, failure) => {
-      ctx.db.listEvents().then((rows) => success(rows.map(toCalendarEvent))).catch((err) => {
+      ctx.db.listEvents().then((rows) => {
+        success(rows.map(toCalendarEvent));
+        renderUpcoming(rows);
+      }).catch((err) => {
         ctx.fail(err);
         failure(err);
       });
@@ -201,7 +199,7 @@ async function moveEvent(info) {
       all_day: ev.allDay,
     });
     toast('Termin verschoben.');
-    renderUpcoming();
+    refresh();
   } catch (err) {
     info.revert();
     ctx.fail(err);

@@ -10,7 +10,7 @@ const COLUMNS = [
 ];
 
 // Kategorie bestimmt die Randfarbe (bewusst anders als die Personenfarben)
-export const CATEGORIES = {
+const CATEGORIES = {
   // Reihenfolge = Reihenfolge der Zeilen (Swimlanes) auf dem Board
   design: { label: 'Design', color: '#e879f9' },   // Fuchsia
   code: { label: 'Code', color: '#2dd4bf' },       // Türkis
@@ -22,8 +22,7 @@ const PRIORITIES = { 1: 'Prio 1', 2: 'Prio 2', 3: 'Prio 3' };
 
 let ctx;
 let cards = [];
-let editing = null;     // Karte im Dialog, null = neu
-let newStatus = 'todo'; // Spalte für eine neue Karte
+let editing = null; // Karte im Dialog, null = neu
 let dialogTags = new Set();
 let draggedId = null;
 
@@ -197,7 +196,6 @@ function dialogError(message) {
 
 function openDialog(card, status = 'todo') {
   editing = card;
-  newStatus = status;
   const form = $('#card-form');
   form.reset();
   dialogError('');

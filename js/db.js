@@ -3,6 +3,7 @@
 //  - Demo (Beispieldaten im localStorage, wenn config.js leer ist)
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { isoDate } from './util.js';
 
 const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/+esm';
 const PAGE_SIZE = 1000; // Supabase liefert max. 1000 Zeilen pro Abfrage
@@ -54,6 +55,10 @@ class SupabaseDb {
 
   async listMembers() {
     return check(await this.sb.from('members').select('*').order('display_name'));
+  }
+
+  async getMember(username) {
+    return check(await this.sb.from('members').select('*').eq('github_username', username).single());
   }
 
   async updateMe(username, patch) {
@@ -148,10 +153,6 @@ function safeGet(key) {
 }
 function safeSet(key, value) {
   try { localStorage.setItem(key, value); } catch { /* privater Modus o.ä. – dann nur im Speicher */ }
-}
-
-function isoDate(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function seedDemo() {
@@ -250,6 +251,10 @@ class DemoDb {
 
   async listMembers() {
     return structuredClone(this.data.members).sort((a, b) => a.display_name.localeCompare(b.display_name));
+  }
+
+  async getMember(username) {
+    return structuredClone(this.data.members.find((m) => m.github_username === username));
   }
 
   async updateMe(username, patch) {

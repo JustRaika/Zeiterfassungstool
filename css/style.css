@@ -14,7 +14,7 @@
   /* Eigener Cursor, Hotspot = Fingerspitze */
   --cursor: url("../img/cursor.png") 8 3;
   /* Schriften der Fourcast-Identity.
-     Display: Überschriften, Tabs, Knöpfe, Timer. Text bleibt die Systemschrift (besser lesbar).
+     Display (Unbounded): nur Kartentitel und das Wort „Fourcast“. Alles andere in der Systemschrift.
      Sobald es eine Webfont-Lizenz für itangiuh gibt: @font-face ergänzen und hier
      --font-wordmark auf "Itangiuh", var(--font-display) setzen. */
   --font-display: "Unbounded", system-ui, sans-serif;
@@ -55,14 +55,13 @@ code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-
   color: var(--muted);
 }
 .login-card { max-width: 380px; width: 100%; text-align: center; color: var(--text); }
-.login-card .brand { font-size: 1.5rem; margin-bottom: 8px; }
+.login-card .brand { font-size: 1.5rem; margin-bottom: 8px; justify-content: center; }
 .error-text { text-align: left; white-space: pre-wrap; color: var(--danger); font-size: 0.85rem; }
 
 .brand { font-family: var(--font-text); font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 /* Schriftzug: „Fourcast“ in Unbounded, „Zeiterfassung“ in der Systemschrift, beides hell */
 .brand span { font-weight: 400; color: #e4e4ec; }
 .brand .wordmark { font-family: var(--font-wordmark); font-weight: 600; letter-spacing: -0.02em; color: #f6f6fa; }
-.login-card .brand { justify-content: center; }
 .logo { width: 32px; height: 32px; }
 .login-logo { width: 96px; height: 96px; display: block; margin: 0 auto 12px; }
 
@@ -156,13 +155,12 @@ textarea { resize: vertical; }
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 8px 16px;
-  cursor: pointer;
   background: var(--surface-2);
   color: var(--text);
   white-space: nowrap;
 }
 .btn:hover { filter: brightness(0.96); }
-.btn:disabled { opacity: 0.5; cursor: default; }
+.btn:disabled { opacity: 0.5; }
 .btn.primary { background: var(--accent); color: var(--accent-text); }
 .btn.ghost { background: transparent; border-color: var(--border); }
 .btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
@@ -172,7 +170,6 @@ textarea { resize: vertical; }
   border: 0;
   background: transparent;
   color: var(--muted);
-  cursor: pointer;
   padding: 4px 6px;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -220,10 +217,9 @@ button.chip[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 28%, 
 }
 .entry-list li:first-child { border-top: 0; }
 .entry-list .comment { grid-column: 3; color: var(--muted); font-size: 0.85rem; }
-.entry-list .actions { grid-row: 1; grid-column: 4; }
+.entry-list .actions { grid-row: 1; grid-column: 4; white-space: nowrap; }
 .dur { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .entry-list .date { white-space: nowrap; }
-.entry-list .actions { white-space: nowrap; }
 .empty { color: var(--muted); padding: 12px 0; }
 
 /* ---------- Übersicht ---------- */
@@ -383,7 +379,7 @@ kbd {
 .kanban-card {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--c, var(--border));
+  border-left: 4px solid var(--c, var(--border));
   border-radius: 8px;
   padding: 10px;
   display: flex;
@@ -395,7 +391,6 @@ kbd {
 .kanban-card.dragging { opacity: 0.35; }
 .kanban-card.drop-before { box-shadow: 0 -3px 0 var(--accent); }
 .kanban-list.drop-end { box-shadow: inset 0 -3px 0 var(--accent); }
-.kanban-card { border-left-width: 4px; }
 .kanban-badges { display: flex; gap: 6px; align-items: center; font-size: 0.72rem; font-weight: 600; }
 .prio { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); white-space: nowrap; }
 .prio-1 { background: var(--text); border-color: var(--text); color: #1c1c23; }
@@ -431,7 +426,6 @@ kbd {
 #calendar .fc-button-active { color: var(--accent-text); }
 #calendar .fc-toolbar-title { font-size: 1.1rem; font-family: var(--font-text); font-weight: 600; }
 #calendar a { color: inherit; text-decoration: none; }
-#calendar .fc-event { cursor: pointer; }
 
 /* ---------- Dialog ---------- */
 dialog {
@@ -483,10 +477,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.4); }
 
 @media (max-width: 640px) {
   main { padding: 16px; }
-  .topbar { flex-wrap: wrap; padding: 10px 16px; gap: 8px; }
-  .topbar .brand { flex: 1; }
-  .tabs { order: 3; width: 100%; margin: 0; }
-  .tabs a { flex: 1; text-align: center; padding: 6px 4px; }
+  .topbar { padding: 10px 16px; gap: 8px; }
+  .tabs a { padding: 6px 4px; }
   .banner { padding: 8px 16px; }
   .card { padding: 16px; }
   .fields { grid-template-columns: 1fr; }

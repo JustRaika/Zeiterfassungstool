@@ -135,7 +135,9 @@ function renderTable(list) {
 function exportCsv() {
   const { list } = filtered();
   const cell = (v) => {
-    const s = String(v ?? '');
+    let s = String(v ?? '');
+    // Text, der mit = + - @ beginnt, würde Excel als Formel ausführen: mit ' entschärfen
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [
