@@ -378,6 +378,16 @@ kbd {
 .kanban-card.dragging { opacity: 0.35; }
 .kanban-card.drop-before { box-shadow: 0 -3px 0 var(--accent); }
 .kanban-list.drop-end { box-shadow: inset 0 -3px 0 var(--accent); }
+.kanban-card { border-left-width: 4px; }
+.kanban-badges { display: flex; gap: 6px; align-items: center; font-size: 0.72rem; font-weight: 600; }
+.prio { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); white-space: nowrap; }
+.prio-1 { background: var(--text); border-color: var(--text); color: #1c1c23; }
+.prio-2 { border-color: var(--text); color: var(--text); }
+.prio-3 { color: var(--muted); }
+.cat { color: var(--c); }
+.kanban-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--muted); }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-item::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--c); }
 .kanban-title { font-weight: 600; overflow-wrap: anywhere; }
 .kanban-col[data-status="done"] .kanban-title { color: var(--muted); text-decoration: line-through; }
 .kanban-card .chips { gap: 4px; }

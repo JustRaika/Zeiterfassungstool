@@ -124,7 +124,7 @@ class SupabaseDb {
 // ---------------------------------------------------------------------
 // Demo (localStorage)
 // ---------------------------------------------------------------------
-const DEMO_KEY = 'fourcast-zeit-demo-v4';
+const DEMO_KEY = 'fourcast-zeit-demo-v5';
 const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
 
 const DEMO_TAGS = [
@@ -197,15 +197,15 @@ function seedDemo() {
   ].map((e) => ({ id: crypto.randomUUID(), description: null, created_at: new Date().toISOString(), ...e }));
 
   const cards = [
-    ['backlog', 'Ideen für Level 4 sammeln', null, ['Woahbuilding']],
-    ['todo', 'Steam-Page Texte schreiben', 'demo-robin', ['Social Media']],
-    ['todo', 'Hauptmenü-Musik', 'demo-robin', ['Sound']],
-    ['doing', 'Puzzle-Mechanik Spiegel', 'demo-alex', ['Coding', 'Puzzle Cooking']],
-    ['doing', 'Felsen texturieren', 'demo-sam', ['Texturing']],
-    ['done', 'Teamvertrag aufsetzen', 'demo-jo', ['Organisation']],
-  ].map(([status, title, assignee, cardTags], i) => ({
-    id: crypto.randomUUID(), status, title, assignee, tags: cardTags, position: i, description: null,
-    due_date: null, created_by: 'demo-jo', created_at: new Date().toISOString(),
+    ['backlog', 'Ideen für Level 4 sammeln', null, ['Woahbuilding'], 3, 'design'],
+    ['todo', 'Steam-Page Texte schreiben', 'demo-robin', ['Social Media'], 1, 'admin'],
+    ['todo', 'Hauptmenü-Musik', 'demo-robin', ['Sound'], 2, 'design'],
+    ['doing', 'Puzzle-Mechanik Spiegel', 'demo-alex', ['Coding', 'Puzzle Cooking'], 1, 'code'],
+    ['doing', 'Bugs im Level 2 prüfen', 'demo-sam', ['Testing'], 2, 'testing'],
+    ['done', 'Teamvertrag aufsetzen', 'demo-jo', ['Organisation'], 2, 'admin'],
+  ].map(([status, title, assignee, cardTags, priority, category], i) => ({
+    id: crypto.randomUUID(), status, title, assignee, tags: cardTags, priority, category, position: i,
+    description: null, due_date: null, created_by: 'demo-jo', created_at: new Date().toISOString(),
   }));
 
   return { members, tags, entries, events, cards };
@@ -327,7 +327,7 @@ class DemoDb {
 
   async addCard(card) {
     const row = {
-      id: crypto.randomUUID(), status: 'todo', position: 0, description: null, assignee: null,
+      id: crypto.randomUUID(), status: 'todo', position: 0, priority: 2, category: null, description: null, assignee: null,
       tags: [], due_date: null, created_by: this.user, created_at: new Date().toISOString(), ...card,
     };
     (this.data.cards ||= []).push(row);

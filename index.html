@@ -204,6 +204,12 @@
 
       <!-- Kanban-Board -->
       <section id="view-board" class="view" hidden>
+        <div class="kanban-legend">
+          <span class="legend-item" style="--c:#2dd4bf">Code</span>
+          <span class="legend-item" style="--c:#a3e635">Design</span>
+          <span class="legend-item" style="--c:#cbd5e1">Admin</span>
+          <span class="legend-item" style="--c:#f87171">Testing</span>
+        </div>
         <div id="board" class="kanban"></div>
         <p class="muted small board-hint">
           <span class="hint-mouse">Karten per Drag &amp; Drop verschieben oder anklicken zum Bearbeiten.</span>
@@ -265,6 +271,14 @@
       <label class="field">Beschreibung
         <textarea name="description" rows="3" maxlength="2000"></textarea>
       </label>
+      <div class="pair">
+        <label class="field">Priorität <span class="muted">(Pflicht)</span>
+          <select name="priority" required></select>
+        </label>
+        <label class="field">Kategorie
+          <select name="category"></select>
+        </label>
+      </div>
       <div class="pair">
         <label class="field">Spalte
           <select name="status"></select>

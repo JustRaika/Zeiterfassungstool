@@ -3,11 +3,21 @@
 import { $, esc, fmtDate, isoDate, personLabel, tagChips, toast } from './util.js';
 
 const COLUMNS = [
-  ['backlog', 'Ideen'],
+  ['backlog', 'Backlog'],
   ['todo', 'To Do'],
-  ['doing', 'In Arbeit'],
+  ['doing', 'In Bearbeitung'],
   ['done', 'Erledigt'],
 ];
+
+// Kategorie bestimmt die Randfarbe (bewusst anders als die Personenfarben)
+export const CATEGORIES = {
+  code: { label: 'Code', color: '#2dd4bf' },       // Türkis
+  design: { label: 'Design', color: '#a3e635' },   // Limette
+  admin: { label: 'Admin', color: '#cbd5e1' },     // Silber
+  testing: { label: 'Testing', color: '#f87171' }, // Rot
+};
+
+const PRIORITIES = { 1: 'Prio 1', 2: 'Prio 2', 3: 'Prio 3' };
 
 let ctx;
 let cards = [];
@@ -69,9 +79,14 @@ function cardsIn(status) {
 
 function cardHtml(c) {
   const assignee = ctx.memberMap.get(c.assignee);
+  const category = CATEGORIES[c.category];
   const overdue = c.due_date && c.status !== 'done' && c.due_date < isoDate();
   return `<article class="kanban-card" draggable="true" data-id="${esc(c.id)}"
-      style="--c:${esc(assignee?.color || 'var(--border)')}">
+      style="--c:${category?.color || 'var(--border)'}">
+    <div class="kanban-badges">
+      <span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span>
+      ${category ? `<span class="cat">${category.label}</span>` : ''}
+    </div>
     <div class="kanban-title">${esc(c.title)}</div>
     ${c.tags.length ? `<div class="chips">${tagChips(c.tags, ctx.tagMap)}</div>` : ''}
     <div class="kanban-meta">
@@ -179,6 +194,13 @@ function openDialog(card, status = 'todo') {
   form.status.innerHTML = COLUMNS.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
   form.assignee.innerHTML = '<option value="">Niemand</option>' +
     ctx.members.map((m) => `<option value="${esc(m.github_username)}">${esc(m.display_name)}</option>`).join('');
+  // Priorität muss bei neuen Karten bewusst gewählt werden, daher kein Vorschlag
+  form.priority.innerHTML = '<option value="" disabled>Bitte wählen …</option>' +
+    Object.entries(PRIORITIES).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+  form.category.innerHTML = '<option value="">Keine</option>' +
+    Object.entries(CATEGORIES).map(([value, c]) => `<option value="${value}">${c.label}</option>`).join('');
+  form.priority.value = card?.priority ? String(card.priority) : '';
+  form.category.value = card?.category || '';
 
   form.title.value = card?.title || '';
   form.description.value = card?.description || '';
@@ -203,10 +225,13 @@ async function saveCard(e) {
   const form = $('#card-form');
   const title = form.title.value.trim();
   if (!title) { dialogError('Bitte einen Titel eingeben.'); return; }
+  if (!form.priority.value) { dialogError('Bitte eine Priorität wählen.'); return; }
 
   const status = form.status.value;
   const payload = {
     title,
+    priority: Number(form.priority.value),
+    category: form.category.value || null,
     description: form.description.value.trim() || null,
     status,
     assignee: form.assignee.value || null,

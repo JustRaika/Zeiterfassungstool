@@ -66,6 +66,11 @@ create table if not exists public.kanban_cards (
   created_by  text references public.members (github_username) on update cascade on delete set null,
   created_at  timestamptz not null default now()
 );
+-- Priorität 1 (hoch) bis 3 (tief) und Kategorie (bestimmt die Randfarbe der Karte)
+alter table public.kanban_cards add column if not exists priority smallint not null default 2
+  check (priority in (1, 2, 3));
+alter table public.kanban_cards add column if not exists category text
+  check (category in ('code', 'design', 'admin', 'testing'));
 
 
 -- ---------------------------------------------------------------------
