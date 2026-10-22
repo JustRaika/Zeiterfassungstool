@@ -13,7 +13,7 @@ const COLUMNS = [
 const CATEGORIES = {
   // Reihenfolge = Reihenfolge der Zeilen (Swimlanes) auf dem Board
   design: { label: 'Design', color: '#e879f9' },   // Fuchsia
-  code: { label: 'Code', color: '#2dd4bf' },       // Türkis
+  code: { label: 'Code', color: '#4169e1' },       // Royalblau
   admin: { label: 'Admin', color: '#cbd5e1' },     // Silber
   testing: { label: 'Testing', color: '#a3e635' }, // Limette
 };

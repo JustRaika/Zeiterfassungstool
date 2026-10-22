@@ -428,6 +428,12 @@ kbd {
 
 /* ---------- Tasks: Umschalter Board/Liste, Liste, Unteraufgaben ---------- */
 .tasks-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.tasks-main { position: relative; }
+#task-new { margin-bottom: 12px; }
+/* Genug Rand links: "+ Task" neben das Board statt darüber */
+@media (min-width: 1360px) {
+  #task-new { position: absolute; right: calc(100% + 16px); top: 0; margin: 0; }
+}
 .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .segmented button {
   font: inherit;
@@ -487,7 +493,7 @@ dialog {
   width: min(460px, calc(100vw - 32px));
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.4); }
-/* Titel direkt als Überschrift bearbeiten: sieht aus wie ein Titel, Rahmen erst bei Hover/Fokus */
+/* Titel direkt als Überschrift bearbeiten: sieht aus wie ein Titel, ohne Rahmen */
 dialog input.title-input {
   height: auto;
   margin: 0 0 14px -9px;
@@ -499,7 +505,7 @@ dialog input.title-input {
   background: transparent;
   border-color: transparent;
 }
-dialog input.title-input:hover { border-color: var(--border); }
+dialog input.title-input:focus { outline: none; }
 dialog input.title-input::placeholder { color: var(--muted); }
 
 /* ---------- Toast ---------- */
