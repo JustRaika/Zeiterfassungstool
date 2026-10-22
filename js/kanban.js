@@ -29,6 +29,8 @@ let dialogAssignees = new Set();
 let dialogSubtasks = []; // [{ title, done }]
 let draggedId = null;
 let view = loadView(); // 'board' | 'list'
+// Filter der Listenansicht ('' = alle)
+let filters = { q: '', person: '', category: '', priority: '', status: '' };
 
 // Gewählte Ansicht pro Browser merken (falls localStorage nicht geht: einfach Board)
 function loadView() {
@@ -58,6 +60,8 @@ export function init(c) {
     if (btn) setView(btn.dataset.view);
   });
   $('#task-new').addEventListener('click', () => openDialog(null));
+  setupFilters();
+  renderChoices();
 
   const form = $('#card-form');
   form.addEventListener('submit', saveCard);
@@ -96,6 +100,7 @@ function render() {
   }
   $('#board').hidden = view !== 'board';
   $('.board-hint').hidden = view !== 'board';
+  $('#task-filters').hidden = view !== 'list';
   $('#task-list').hidden = view !== 'list';
   if (view === 'board') renderBoard(); else renderList();
 }
@@ -182,17 +187,48 @@ function onBoardClick(e) {
 // ---------------------------------------------------------------------
 // Liste: nach Spalte, darin nach Kategorie und Reihenfolge wie auf dem Board
 // ---------------------------------------------------------------------
+function setupFilters() {
+  const el = $('#task-filters');
+  const options = (pairs) => pairs.map(([value, label]) => `<option value="${esc(value)}">${esc(label)}</option>`).join('');
+  el.person.innerHTML = options([['', 'Alle'], ...ctx.members.map((m) => [m.github_username, m.display_name]), ['-', 'Niemand']]);
+  el.category.innerHTML = options([['', 'Alle'], ...Object.entries(CATEGORIES).map(([v, c]) => [v, c.label])]);
+  el.priority.innerHTML = options([['', 'Alle'], ...Object.entries(PRIORITIES)]);
+  el.status.innerHTML = options([['', 'Alle'], ['open', 'Alle offenen'], ...COLUMNS]);
+  el.addEventListener('submit', (e) => e.preventDefault());
+  el.addEventListener('input', () => {
+    filters = {
+      q: el.q.value.trim().toLowerCase(),
+      person: el.person.value,
+      category: el.category.value,
+      priority: el.priority.value,
+      status: el.status.value,
+    };
+    renderList();
+  });
+}
+
+function matchesFilters(c) {
+  const f = filters;
+  const text = `${c.title} ${c.description || ''} ${c.subtasks.map((s) => s.title).join(' ')}`.toLowerCase();
+  if (f.q && !text.includes(f.q)) return false;
+  if (f.person === '-' ? c.assignees.length : f.person && !c.assignees.includes(f.person)) return false;
+  if (f.category && c.category !== f.category) return false;
+  if (f.priority && String(c.priority) !== f.priority) return false;
+  if (f.status === 'open' ? c.status === 'done' : f.status && c.status !== f.status) return false;
+  return true;
+}
+
 function renderList() {
   const statusOrder = COLUMNS.map(([s]) => s);
   const catOrder = Object.keys(CATEGORIES);
   const catIndex = (c) => (CATEGORIES[c.category] ? catOrder.indexOf(c.category) : catOrder.length);
-  const sorted = [...cards].sort((a, b) =>
+  const sorted = cards.filter(matchesFilters).sort((a, b) =>
     statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status)
     || catIndex(a) - catIndex(b)
     || a.position - b.position);
 
   if (!sorted.length) {
-    $('#task-list').innerHTML = '<p class="empty">Noch keine Tasks.</p>';
+    $('#task-list').innerHTML = `<p class="empty">${cards.length ? 'Keine Tasks für diese Filter.' : 'Noch keine Tasks.'}</p>`;
     return;
   }
   const statusLabel = Object.fromEntries(COLUMNS);
@@ -320,24 +356,27 @@ function addSubtask() {
   input.focus();
 }
 
-function openDialog(card, status = 'todo', category = '') {
+// Spalte, Kategorie und Priorität als Chips zum Anklicken (Radio-Buttons, je genau eine Wahl)
+function renderChoices() {
+  const chips = (name, pairs) => pairs.map(([value, label, color]) => `
+    <label class="chip" style="--c:${color || 'var(--accent)'}"><input type="radio" name="${name}" value="${value}">${esc(label)}</label>`).join('');
+  $('#card-status').innerHTML = chips('status', COLUMNS);
+  $('#card-category').innerHTML = chips('category', Object.entries(CATEGORIES).map(([v, c]) => [v, c.label, c.color]));
+  $('#card-priority').innerHTML = chips('priority', Object.entries(PRIORITIES));
+}
+
+// Neue Tasks: Backlog, Design, Prio 3 – ausser man klickt auf eine Zelle im Board
+function openDialog(card, status = 'backlog', category = '') {
   editing = card;
   const form = $('#card-form');
   form.reset();
   dialogError('');
 
-  form.status.innerHTML = COLUMNS.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
-  // Priorität muss bei neuen Karten bewusst gewählt werden, daher kein Vorschlag
-  form.priority.innerHTML = '<option value="" disabled>Bitte wählen …</option>' +
-    Object.entries(PRIORITIES).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
-  form.category.innerHTML = '<option value="">Keine</option>' +
-    Object.entries(CATEGORIES).map(([value, c]) => `<option value="${value}">${c.label}</option>`).join('');
-
   form.title.value = card?.title || '';
   form.description.value = card?.description || '';
-  form.priority.value = card?.priority ? String(card.priority) : '';
-  form.category.value = card ? card.category || '' : category;
   form.status.value = card?.status || status;
+  form.category.value = card ? card.category || '' : category || 'design';
+  form.priority.value = String(card?.priority || 3);
   form.due_date.value = card?.due_date || '';
 
   dialogAssignees = new Set(card?.assignees || []);
@@ -363,13 +402,15 @@ async function saveCard(e) {
   const form = $('#card-form');
   const title = form.title.value.trim();
   if (!title) { dialogError('Bitte einen Titel eingeben.'); return; }
+  if (!form.status.value) { dialogError('Bitte eine Spalte wählen.'); return; }
+  if (!form.category.value) { dialogError('Bitte eine Kategorie wählen.'); return; }
   if (!form.priority.value) { dialogError('Bitte eine Priorität wählen.'); return; }
 
   const status = form.status.value;
   const payload = {
     title,
     priority: Number(form.priority.value),
-    category: form.category.value || null,
+    category: form.category.value,
     description: form.description.value.trim() || null,
     status,
     assignees: ctx.members.map((m) => m.github_username).filter((u) => dialogAssignees.has(u)),

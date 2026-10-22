@@ -195,6 +195,11 @@ textarea { resize: vertical; }
 }
 button.chip[aria-pressed="false"] { background: transparent; border-color: var(--border); color: var(--muted); }
 button.chip[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 28%, transparent); border-color: var(--c); }
+/* Einfachauswahl als Chips (Radio-Buttons, z. B. Spalte, Kategorie, Priorität) */
+label.chip { background: transparent; border-color: var(--border); color: var(--muted); font-size: 0.8rem; }
+label.chip input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+label.chip:has(input:checked) { background: color-mix(in srgb, var(--c) 28%, transparent); border-color: var(--c); color: var(--text); }
+label.chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tag-hint { margin: 8px 0 0; font-weight: 400; }
 
 /* ---------- Timer ---------- */
@@ -229,6 +234,7 @@ button.chip[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 28%, 
 .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 .filters .field { flex: 1 1 150px; }
 .filters .btn { flex: none; }
+form.filters .field { margin-bottom: 0; }
 
 .bars { display: flex; flex-direction: column; gap: 10px; }
 .bar-row { display: grid; grid-template-columns: minmax(80px, 140px) 1fr auto; gap: 10px; align-items: center; font-size: 0.9rem; }

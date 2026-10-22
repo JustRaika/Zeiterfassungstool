@@ -221,7 +221,24 @@
         <div class="tasks-main">
           <button type="button" id="task-new" class="btn create">+ Task</button>
           <div id="board" class="kanban"></div>
-          <div id="task-list" class="card" hidden></div>
+          <form id="task-filters" class="card filters" hidden>
+          <label class="field">Suche
+            <input type="search" name="q" placeholder="Titel, Beschreibung …">
+          </label>
+          <label class="field">Zuständig
+            <select name="person"></select>
+          </label>
+          <label class="field">Kategorie
+            <select name="category"></select>
+          </label>
+          <label class="field">Priorität
+            <select name="priority"></select>
+          </label>
+          <label class="field">Spalte
+            <select name="status"></select>
+          </label>
+        </form>
+        <div id="task-list" class="card" hidden></div>
         </div>
         <p class="muted small board-hint">
           <span class="hint-mouse">Auf eine freie Stelle klicken, um dort einen Task anzulegen. Karten per Drag &amp; Drop verschieben.</span>
@@ -278,18 +295,19 @@
       <label class="field">Beschreibung
         <textarea name="description" rows="3" maxlength="2000"></textarea>
       </label>
+      <fieldset class="field">
+        <legend>Spalte</legend>
+        <div id="card-status" class="chips radio-chips"></div>
+      </fieldset>
+      <fieldset class="field">
+        <legend>Kategorie</legend>
+        <div id="card-category" class="chips radio-chips"></div>
+      </fieldset>
       <div class="pair">
-        <label class="field">Priorität *
-          <select name="priority" required></select>
-        </label>
-        <label class="field">Kategorie
-          <select name="category"></select>
-        </label>
-      </div>
-      <div class="pair">
-        <label class="field">Spalte
-          <select name="status"></select>
-        </label>
+        <fieldset class="field">
+          <legend>Priorität</legend>
+          <div id="card-priority" class="chips radio-chips"></div>
+        </fieldset>
         <label class="field">Fällig am
           <input type="date" name="due_date">
         </label>
