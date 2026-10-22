@@ -143,13 +143,12 @@ function renderBoard() {
   const head = COLUMNS.map(([status, label]) => `
     <header class="kanban-col-head">
       <h2>${label} <span class="count">${cards.filter((c) => c.status === status).length}</span></h2>
-      <button class="icon-btn" data-add="${status}" title="Karte hinzufügen">+</button>
     </header>`).join('');
 
   const rows = lanes.map((category) => `
     <div class="kanban-lane-sep" style="--c:${CATEGORIES[category]?.color || 'var(--border)'}"></div>
     ${COLUMNS.map(([status]) => `
-      <div class="kanban-list" data-status="${status}" data-category="${category}">
+      <div class="kanban-list" data-status="${status}" data-category="${category}" title="Klicken, um hier einen Task anzulegen">
         ${cardsIn(status, category).map(cardHtml).join('')}
       </div>`).join('')}`).join('');
 
@@ -172,11 +171,12 @@ function cardHtml(c) {
   </article>`;
 }
 
+// Karte anklicken = bearbeiten, freie Stelle in einer Zelle = neuer Task genau dort
 function onBoardClick(e) {
-  const add = e.target.closest('[data-add]');
-  if (add) { openDialog(null, add.dataset.add); return; }
   const card = e.target.closest('.kanban-card');
-  if (card) openDialog(cards.find((c) => c.id === card.dataset.id));
+  if (card) { openDialog(cards.find((c) => c.id === card.dataset.id)); return; }
+  const cell = e.target.closest('.kanban-list');
+  if (cell) openDialog(null, cell.dataset.status, cell.dataset.category);
 }
 
 // ---------------------------------------------------------------------
@@ -320,7 +320,7 @@ function addSubtask() {
   input.focus();
 }
 
-function openDialog(card, status = 'todo') {
+function openDialog(card, status = 'todo', category = '') {
   editing = card;
   const form = $('#card-form');
   form.reset();
@@ -336,7 +336,7 @@ function openDialog(card, status = 'todo') {
   form.title.value = card?.title || '';
   form.description.value = card?.description || '';
   form.priority.value = card?.priority ? String(card.priority) : '';
-  form.category.value = card?.category || '';
+  form.category.value = card ? card.category || '' : category;
   form.status.value = card?.status || status;
   form.due_date.value = card?.due_date || '';
 
@@ -351,7 +351,6 @@ function openDialog(card, status = 'todo') {
   dialogSubtasks = structuredClone(card?.subtasks || []);
   renderSubtasks();
 
-  $('#card-dialog-title').textContent = card ? 'Task bearbeiten' : 'Neuer Task';
   $('#card-delete').hidden = !card;
   const creator = card && ctx.memberMap.get(card.created_by);
   $('#card-meta').textContent = creator ? `Angelegt von ${creator.display_name}` : '';

@@ -238,7 +238,6 @@ function openDialog(row, defaults = {}) {
   form.description.value = row?.description || '';
   syncAllDay();
 
-  $('#event-dialog-title').textContent = row ? 'Termin bearbeiten' : 'Neuer Termin';
   $('#event-delete').hidden = !row;
   const creator = row && ctx.memberMap.get(row.created_by);
   $('#event-meta').textContent = creator ? `Angelegt von ${creator.display_name}` : '';

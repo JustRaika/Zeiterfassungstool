@@ -127,6 +127,24 @@ function setupHeader() {
   }
 }
 
+// Klick neben einen Dialog schliesst ihn wie "Abbrechen".
+// Nur wenn auch der Mausklick daneben begann (Text markieren und daneben loslassen schliesst nicht).
+function setupDialogs() {
+  for (const dialog of document.querySelectorAll('dialog')) {
+    const outside = (e) => {
+      if (e.target !== dialog) return false;
+      const r = dialog.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+    };
+    let downOutside = false;
+    dialog.addEventListener('mousedown', (e) => { downOutside = outside(e); });
+    dialog.addEventListener('click', (e) => {
+      if (downOutside && outside(e)) dialog.close();
+      downOutside = false;
+    });
+  }
+}
+
 async function start() {
   try {
     ctx.db = await createDb();
@@ -157,6 +175,7 @@ async function start() {
     ctx.me = auth.me;
     await ctx.loadAll();
     setupHeader();
+    setupDialogs();
     for (const view of Object.values(VIEWS)) view.init(ctx);
     showScreen('app');
     showTab();

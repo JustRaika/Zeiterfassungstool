@@ -92,6 +92,7 @@
 
           <form id="entry-form" class="card" novalidate>
             <h2 id="form-title">Zeit eintragen</h2>
+            <p id="timer-note" class="timer-note small" hidden>⏱ Zeit aus dem Timer übernommen. Beim Speichern wird der Timer zurückgesetzt.</p>
             <div class="fields">
               <label class="field">Datum
                 <input type="date" name="date" required>
@@ -205,25 +206,25 @@
       <!-- Tasks: Kanban-Board oder Liste -->
       <section id="view-tasks" class="view" hidden>
         <div class="tasks-toolbar">
+          <div class="row">
+            <button type="button" id="task-new" class="btn create">+ Task</button>
+            <div id="tasks-view-toggle" class="segmented" role="group" aria-label="Ansicht">
+              <button type="button" data-view="board" aria-pressed="true">Board</button>
+              <button type="button" data-view="list" aria-pressed="false">Liste</button>
+            </div>
+          </div>
           <div class="kanban-legend">
             <span class="legend-item" style="--c:#e879f9">Design</span>
             <span class="legend-item" style="--c:#2dd4bf">Code</span>
             <span class="legend-item" style="--c:#cbd5e1">Admin</span>
             <span class="legend-item" style="--c:#a3e635">Testing</span>
           </div>
-          <div class="row">
-            <div id="tasks-view-toggle" class="segmented" role="group" aria-label="Ansicht">
-              <button type="button" data-view="board" aria-pressed="true">Board</button>
-              <button type="button" data-view="list" aria-pressed="false">Liste</button>
-            </div>
-            <button type="button" id="task-new" class="btn primary small">+ Task</button>
-          </div>
         </div>
         <div id="board" class="kanban"></div>
         <div id="task-list" class="card" hidden></div>
         <p class="muted small board-hint">
-          <span class="hint-mouse">Karten per Drag &amp; Drop verschieben oder anklicken zum Bearbeiten.</span>
-          <span class="hint-touch">Karte antippen, um sie zu bearbeiten oder in eine andere Spalte zu verschieben.</span>
+          <span class="hint-mouse">Auf eine freie Stelle klicken, um dort einen Task anzulegen. Karten per Drag &amp; Drop verschieben.</span>
+          <span class="hint-touch">Freie Stelle antippen für einen neuen Task, Karte antippen zum Bearbeiten oder Verschieben.</span>
         </p>
       </section>
     </main>
@@ -231,10 +232,8 @@
 
   <dialog id="event-dialog">
     <form id="event-form" novalidate>
-      <h2 id="event-dialog-title">Termin</h2>
-      <label class="field">Titel
-        <input name="title" required maxlength="120">
-      </label>
+      <input name="title" class="title-input" required maxlength="120" aria-label="Titel" placeholder="Titel des Termins">
+
       <div class="row checks">
         <label class="check"><input type="checkbox" name="all_day"> Ganztägig</label>
         <label class="check"><input type="checkbox" name="is_milestone"> ★ Meilenstein</label>
@@ -274,10 +273,7 @@
 
   <dialog id="card-dialog">
     <form id="card-form" novalidate>
-      <h2 id="card-dialog-title">Task</h2>
-      <label class="field">Titel
-        <input name="title" required maxlength="200">
-      </label>
+      <input name="title" class="title-input" required maxlength="200" aria-label="Titel" placeholder="Titel des Tasks">
       <label class="field">Beschreibung
         <textarea name="description" rows="3" maxlength="2000"></textarea>
       </label>

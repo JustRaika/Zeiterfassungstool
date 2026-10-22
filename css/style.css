@@ -166,7 +166,8 @@ textarea { resize: vertical; }
 .btn.primary { background: var(--accent); color: var(--accent-text); }
 .btn.ghost { background: transparent; border-color: var(--border); }
 .btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
-.btn.stop { background: var(--danger); color: #1c1c23; }
+.btn.stop, .btn.create { background: var(--danger); color: #1c1c23; }
+.btn.create { font-weight: 600; padding: 8px 20px; }
 .btn.small { padding: 4px 10px; font-size: 0.85rem; }
 .icon-btn {
   border: 0;
@@ -271,6 +272,22 @@ table.entries td.actions { white-space: nowrap; text-align: right; }
 .stamps li span { color: var(--muted); white-space: nowrap; }
 .stamps .stamp-pause { color: #f5df8a; padding-left: 12px; }
 .stamps .stamp-total { color: var(--muted); font-weight: 600; }
+.stamps .stamp-stop { color: var(--danger); }
+
+/* Gestoppt: Zeit wurde ins Formular übernommen, wartet aufs Speichern */
+.timer-card.stopped .timer-display { color: var(--danger); }
+.timer-note {
+  margin: -4px 0 14px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+}
+@keyframes flash {
+  from { background: color-mix(in srgb, var(--accent) 40%, var(--surface)); border-color: var(--accent); }
+  to { background: var(--surface); border-color: var(--border); }
+}
+input.flash { animation: flash 1.6s ease-out; }
 
 /* ---------- Admin ---------- */
 .badge {
@@ -368,7 +385,6 @@ kbd {
 .kanban-col-foot { border-bottom: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); height: 12px; }
 .kanban-col-head h2 { margin: 0; font-size: 0.9rem; }
 .kanban-col-head .count { font-family: var(--font-text); font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
-.kanban-col-head .icon-btn { font-size: 1.1rem; line-height: 1; padding: 2px 8px; }
 .kanban-lane-sep {
   grid-column: 1 / -1;
   height: 2px;
@@ -377,7 +393,9 @@ kbd {
   background: var(--c);
   opacity: 0.75;
 }
-.kanban-list { display: flex; flex-direction: column; gap: 8px; min-height: 44px; padding-top: 4px; padding-bottom: 4px; }
+.kanban-list { display: flex; flex-direction: column; gap: 8px; min-height: 44px; padding-top: 4px; padding-bottom: 4px; cursor: var(--cursor), pointer; }
+/* Freie Stelle unter dem Mauszeiger hervorheben: Klick legt dort einen Task an */
+.kanban-list:hover:not(:has(.kanban-card:hover)) { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); }
 .kanban-card {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -469,6 +487,20 @@ dialog {
   width: min(460px, calc(100vw - 32px));
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.4); }
+/* Titel direkt als Überschrift bearbeiten: sieht aus wie ein Titel, Rahmen erst bei Hover/Fokus */
+dialog input.title-input {
+  height: auto;
+  margin: 0 0 14px -9px;
+  width: calc(100% + 9px);
+  padding: 4px 8px;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 500;
+  background: transparent;
+  border-color: transparent;
+}
+dialog input.title-input:hover { border-color: var(--border); }
+dialog input.title-input::placeholder { color: var(--muted); }
 
 /* ---------- Toast ---------- */
 #toast {
