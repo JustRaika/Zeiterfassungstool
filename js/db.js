@@ -7,6 +7,8 @@ import { isoDate } from './util.js';
 
 const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/+esm';
 const PAGE_SIZE = 1000; // Supabase liefert max. 1000 Zeilen pro Abfrage
+const IMAGE_BUCKET = 'task-images';
+const IMAGE_LINK_SECONDS = 60 * 60; // Bild-Links gelten eine Stunde
 
 export async function createDb() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
@@ -123,6 +125,25 @@ class SupabaseDb {
 
   async deleteCard(id) {
     check(await this.sb.from('kanban_cards').delete().eq('id', id));
+  }
+
+  // Bilder im privaten Storage-Bucket; gibt den Pfad zurück
+  async uploadImage(blob) {
+    const ext = { 'image/webp': 'webp', 'image/png': 'png' }[blob.type] || 'jpg';
+    const path = `${crypto.randomUUID()}.${ext}`;
+    check(await this.sb.storage.from(IMAGE_BUCKET).upload(path, blob, { contentType: blob.type }));
+    return path;
+  }
+
+  // { pfad: kurzlebiger Link }
+  async imageUrls(paths) {
+    if (!paths.length) return {};
+    const rows = check(await this.sb.storage.from(IMAGE_BUCKET).createSignedUrls(paths, IMAGE_LINK_SECONDS));
+    return Object.fromEntries(rows.filter((r) => r.signedUrl).map((r) => [r.path, r.signedUrl]));
+  }
+
+  async deleteImages(paths) {
+    if (paths.length) check(await this.sb.storage.from(IMAGE_BUCKET).remove(paths));
   }
 }
 
@@ -330,13 +351,15 @@ class DemoDb {
   }
 
   async listCards() {
-    return structuredClone(this.data.cards || []).sort((a, b) => a.position - b.position);
+    return structuredClone(this.data.cards || [])
+      .map((c) => ({ images: [], ...c }))
+      .sort((a, b) => a.position - b.position);
   }
 
   async addCard(card) {
     const row = {
       id: crypto.randomUUID(), status: 'todo', position: 0, priority: 2, category: null, description: null,
-      assignees: [], subtasks: [],
+      assignees: [], subtasks: [], images: [],
       tags: [], due_date: null, created_by: this.user, created_at: new Date().toISOString(), ...card,
     };
     (this.data.cards ||= []).push(row);
@@ -353,6 +376,29 @@ class DemoDb {
 
   async deleteCard(id) {
     this.data.cards = this.data.cards.filter((x) => x.id !== id);
+    this.save();
+  }
+
+  // Demo: Bilder als Data-URL im localStorage
+  async uploadImage(blob) {
+    const url = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+    const path = crypto.randomUUID();
+    (this.data.images ||= {})[path] = url;
+    this.save();
+    return path;
+  }
+
+  async imageUrls(paths) {
+    return Object.fromEntries(paths.filter((p) => this.data.images?.[p]).map((p) => [p, this.data.images[p]]));
+  }
+
+  async deleteImages(paths) {
+    for (const p of paths) delete this.data.images?.[p];
     this.save();
   }
 }

@@ -20,6 +20,8 @@ const CATEGORIES = {
 
 const PRIORITIES = { 1: 'Prio 1', 2: 'Prio 2', 3: 'Prio 3' };
 const VIEW_KEY = 'fourcast-tasks-view';
+const MAX_IMAGES = 10;        // pro Task
+const MAX_IMAGE_SIDE = 1600;  // px, Bilder werden vor dem Hochladen verkleinert
 
 let ctx;
 let cards = [];
@@ -27,6 +29,11 @@ let editing = null; // Karte im Dialog, null = neu
 let dialogTags = new Set();
 let dialogAssignees = new Set();
 let dialogSubtasks = []; // [{ title, done }]
+let dialogImages = [];   // Pfade der angehängten Bilder
+let imageUrls = {};      // Pfad -> Link zum Anzeigen
+let newUploads = [];     // in diesem Dialog hochgeladen; ohne Speichern wieder löschen
+let uploading = 0;
+let saved = false;
 let draggedId = null;
 let view = loadView(); // 'board' | 'list'
 // Filter der Listenansicht ('' = alle)
@@ -84,6 +91,39 @@ export function init(c) {
     if (!btn) return;
     dialogSubtasks.splice(Number(btn.dataset.remove), 1);
     renderSubtasks();
+  });
+
+  // Bilder: Datei wählen, einfügen (Strg + V) oder in den Dialog ziehen
+  const dialog = $('#card-dialog');
+  $('#image-input').addEventListener('change', (e) => {
+    addImages([...e.target.files]);
+    e.target.value = '';
+  });
+  dialog.addEventListener('paste', (e) => {
+    const files = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'));
+    if (!files.length) return;
+    e.preventDefault();
+    addImages(files);
+  });
+  dialog.addEventListener('dragover', (e) => {
+    if (e.dataTransfer.types.includes('Files')) e.preventDefault();
+  });
+  dialog.addEventListener('drop', (e) => {
+    const files = [...e.dataTransfer.files].filter((f) => f.type.startsWith('image/'));
+    if (!files.length) return;
+    e.preventDefault();
+    addImages(files);
+  });
+  $('#card-images').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-remove-image]');
+    if (!btn) return;
+    dialogImages.splice(Number(btn.dataset.removeImage), 1);
+    renderImages();
+  });
+  // Ohne Speichern geschlossen: frisch hochgeladene Bilder wieder entfernen
+  dialog.addEventListener('close', () => {
+    if (!saved && newUploads.length) ctx.db.deleteImages(newUploads).catch(console.error);
+    newUploads = [];
   });
 }
 
@@ -166,6 +206,7 @@ function cardHtml(c) {
     <div class="kanban-badges">
       <span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span>
       ${subtaskProgress(c)}
+      ${c.images.length ? `<span class="muted" title="Bilder">🖼 ${c.images.length}</span>` : ''}
     </div>
     <div class="kanban-title">${esc(c.title)}</div>
     ${c.tags.length ? `<div class="chips">${tagChips(c.tags, ctx.tagMap)}</div>` : ''}
@@ -346,6 +387,69 @@ function renderSubtasks() {
     </li>`).join('');
 }
 
+// ---------------------------------------------------------------------
+// Bilder
+// ---------------------------------------------------------------------
+function renderImages() {
+  $('#card-images').innerHTML = dialogImages.map((path, i) => {
+    const url = imageUrls[path];
+    return `<div class="image-thumb">
+      ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt=""></a>` : '<span class="muted small">Lädt …</span>'}
+      <button type="button" class="icon-btn" data-remove-image="${i}" title="Bild entfernen">✕</button>
+    </div>`;
+  }).join('');
+  $('#image-status').textContent = uploading
+    ? `Lädt ${uploading} Bild${uploading > 1 ? 'er' : ''} hoch …`
+    : 'oder mit Strg + V einfügen / hineinziehen';
+}
+
+// Auf max. MAX_IMAGE_SIDE px verkleinern und als WebP (sonst JPEG) speichern
+async function compressImage(file) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const toBlob = (type, quality) => new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  const webp = await toBlob('image/webp', 0.82);
+  return webp?.type === 'image/webp' ? webp : toBlob('image/jpeg', 0.85);
+}
+
+async function addImages(files) {
+  dialogError('');
+  const room = MAX_IMAGES - dialogImages.length - uploading;
+  if (files.length > room) dialogError(`Maximal ${MAX_IMAGES} Bilder pro Task.`);
+  await Promise.all(files.slice(0, Math.max(0, room)).map(async (file) => {
+    uploading++;
+    renderImages();
+    try {
+      const path = await ctx.db.uploadImage(await compressImage(file));
+      newUploads.push(path);
+      Object.assign(imageUrls, await ctx.db.imageUrls([path]));
+      dialogImages.push(path);
+    } catch (err) {
+      dialogError(`Bild konnte nicht hochgeladen werden: ${err.message || err}`);
+    } finally {
+      uploading--;
+      renderImages();
+    }
+  }));
+}
+
+async function loadImageUrls() {
+  imageUrls = {};
+  renderImages();
+  if (!dialogImages.length) return;
+  try {
+    imageUrls = await ctx.db.imageUrls(dialogImages);
+  } catch (err) {
+    dialogError(`Bilder konnten nicht geladen werden: ${err.message || err}`);
+  }
+  renderImages();
+}
+
 function addSubtask() {
   const input = $('#subtask-input');
   const title = input.value.trim();
@@ -389,6 +493,10 @@ function openDialog(card, status = 'backlog', category = '') {
       aria-pressed="${dialogTags.has(t.name)}">${esc(t.name)}</button>`).join('');
   dialogSubtasks = structuredClone(card?.subtasks || []);
   renderSubtasks();
+  dialogImages = [...(card?.images || [])];
+  newUploads = [];
+  saved = false;
+  loadImageUrls();
 
   $('#card-delete').hidden = !card;
   const creator = card && ctx.memberMap.get(card.created_by);
@@ -405,6 +513,7 @@ async function saveCard(e) {
   if (!form.status.value) { dialogError('Bitte eine Spalte wählen.'); return; }
   if (!form.category.value) { dialogError('Bitte eine Kategorie wählen.'); return; }
   if (!form.priority.value) { dialogError('Bitte eine Priorität wählen.'); return; }
+  if (uploading) { dialogError('Bitte warten, bis die Bilder hochgeladen sind.'); return; }
 
   const status = form.status.value;
   const payload = {
@@ -417,6 +526,7 @@ async function saveCard(e) {
     due_date: form.due_date.value || null,
     tags: ctx.tags.map((t) => t.name).filter((n) => dialogTags.has(n)),
     subtasks: dialogSubtasks,
+    images: dialogImages,
   };
   // Neue Karte oder Spalten-/Kategoriewechsel: ans Ende der Zelle
   if (!editing || editing.status !== status || (editing.category || null) !== payload.category) {
@@ -427,6 +537,10 @@ async function saveCard(e) {
   try {
     if (editing) await ctx.db.updateCard(editing.id, payload);
     else await ctx.db.addCard(payload);
+    saved = true;
+    // Entfernte Bilder (auch eben hochgeladene) auch im Speicher löschen
+    const removed = [...(editing?.images || []), ...newUploads].filter((p) => !dialogImages.includes(p));
+    if (removed.length) ctx.db.deleteImages(removed).catch(console.error);
     $('#card-dialog').close();
     toast(editing ? 'Task gespeichert.' : 'Task angelegt.');
     await show();
@@ -439,6 +553,10 @@ async function deleteCard() {
   if (!editing || !confirm(`Task „${editing.title}“ löschen?`)) return;
   try {
     await ctx.db.deleteCard(editing.id);
+    // Alle Bilder des Tasks (auch eben hochgeladene) löschen
+    const images = [...new Set([...(editing.images || []), ...newUploads])];
+    if (images.length) ctx.db.deleteImages(images).catch(console.error);
+    newUploads = [];
     $('#card-dialog').close();
     toast('Task gelöscht.');
     await show();

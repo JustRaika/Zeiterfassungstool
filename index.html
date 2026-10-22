@@ -296,6 +296,16 @@
         <textarea name="description" rows="3" maxlength="2000"></textarea>
       </label>
       <fieldset class="field">
+        <legend>Bilder</legend>
+        <div id="card-images" class="image-grid"></div>
+        <div class="row">
+          <label class="btn ghost small">+ Bild hinzufügen
+            <input id="image-input" type="file" accept="image/*" multiple hidden>
+          </label>
+          <span id="image-status" class="muted small">oder mit Strg + V einfügen / hineinziehen</span>
+        </div>
+      </fieldset>
+      <fieldset class="field">
         <legend>Spalte</legend>
         <div id="card-status" class="chips radio-chips"></div>
       </fieldset>

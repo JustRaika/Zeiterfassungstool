@@ -73,6 +73,8 @@ alter table public.kanban_cards add column if not exists category text
 -- Mehrere Zuständige (GitHub-Usernamen) und Unteraufgaben [{"title": "...", "done": false}, ...]
 alter table public.kanban_cards add column if not exists assignees text[] not null default '{}';
 alter table public.kanban_cards add column if not exists subtasks jsonb not null default '[]';
+-- Bilder: Pfade der Dateien im Storage-Bucket task-images (siehe unten)
+alter table public.kanban_cards add column if not exists images text[] not null default '{}';
 -- Früher gab es nur eine zuständige Person (Spalte assignee): übernehmen und Spalte entfernen
 do $$ begin
   if exists (select 1 from information_schema.columns
@@ -206,6 +208,31 @@ create policy "kanban_all" on public.kanban_cards
   for all to authenticated
   using (public.current_member() is not null)
   with check (public.current_member() is not null);
+
+
+-- ---------------------------------------------------------------------
+-- Bilder für Tasks (Supabase Storage, getrennt von der Datenbank, 1 GB gratis).
+-- Privater Bucket: Bilder sehen nur eingeloggte Team-Mitglieder (über kurzlebige Links).
+-- Die App verkleinert Bilder vor dem Hochladen (max. 1600 px, WebP).
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('task-images', 'task-images', false, 5242880, array['image/webp', 'image/jpeg', 'image/png'])
+on conflict (id) do nothing;
+
+drop policy if exists "task_images_select" on storage.objects;
+create policy "task_images_select" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'task-images' and public.current_member() is not null);
+
+drop policy if exists "task_images_insert" on storage.objects;
+create policy "task_images_insert" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'task-images' and public.current_member() is not null);
+
+drop policy if exists "task_images_delete" on storage.objects;
+create policy "task_images_delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'task-images' and public.current_member() is not null);
 
 
 -- ---------------------------------------------------------------------
