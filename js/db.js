@@ -8,7 +8,9 @@ import { isoDate } from './util.js';
 const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/+esm';
 const PAGE_SIZE = 1000; // Supabase liefert max. 1000 Zeilen pro Abfrage
 const IMAGE_BUCKET = 'task-images';
-const IMAGE_LINK_SECONDS = 60 * 60; // Bild-Links gelten eine Stunde
+// Bild-Links gelten einen Tag (werden bei jedem Öffnen eines Tasks neu erstellt;
+// so funktionieren sie auch, wenn ein Dialog lange offen bleibt)
+const IMAGE_LINK_SECONDS = 24 * 60 * 60;
 
 export async function createDb() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {

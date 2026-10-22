@@ -1,6 +1,8 @@
 // Tab "Erfassen": Start/Stop-Timer, Formular, eigene Einträge.
 
-import { $, esc, fmtDate, fmtDuration, fmtHours, hhmm, isoDate, sumMinutes, tagChips, toast } from './util.js';
+import {
+  $, esc, fmtDate, fmtDuration, fmtHours, hhmm, isoDate, sumMinutes, tagChips, toast, toggleChip, toggleChips,
+} from './util.js';
 
 const MAX_MINUTES = 24 * 60;
 const RECENT_COUNT = 15;
@@ -28,12 +30,7 @@ export function init(c) {
   form.comment.addEventListener('input', saveDraft);
   $('#entry-cancel').addEventListener('click', resetForm);
   $('#tag-chips').addEventListener('click', (e) => {
-    const chip = e.target.closest('button.chip');
-    if (!chip) return;
-    const name = chip.dataset.tag;
-    if (selectedTags.has(name)) selectedTags.delete(name); else selectedTags.add(name);
-    chip.setAttribute('aria-pressed', selectedTags.has(name));
-    saveDraft();
+    if (toggleChip(e, selectedTags, 'tag')) saveDraft();
   });
   $('#my-entries').addEventListener('click', onListClick);
   document.addEventListener('keydown', onSpace);
@@ -93,17 +90,20 @@ export function editEntry(entry) {
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function resetForm() {
+// Zurück zu "neuer Eintrag": angefangener Entwurf und gestoppter Timer kommen wieder ins Formular.
+// fillTimer: false, wenn der Timer gerade schon verbraucht wurde (Eintrag gespeichert).
+function resetForm({ fillTimer = true } = {}) {
   editingId = null;
   form.reset();
   form.date.value = isoDate();
   selectedTags = new Set();
-  clearDraft();
+  restoreDraft();
   renderTagChips();
   $('#form-title').textContent = 'Zeit eintragen';
   $('#entry-submit').textContent = 'Speichern';
   $('#entry-cancel').hidden = true;
-  fillFromTimer();
+  $('#timer-note').hidden = true;
+  if (fillTimer) fillFromTimer();
 }
 
 // ---------------------------------------------------------------------
@@ -318,9 +318,8 @@ async function discardTimer() {
 // Formular
 // ---------------------------------------------------------------------
 function renderTagChips() {
-  $('#tag-chips').innerHTML = ctx.tags.map((t) =>
-    `<button type="button" class="chip" data-tag="${esc(t.name)}" style="--c:${esc(t.color)}"
-      aria-pressed="${selectedTags.has(t.name)}">${esc(t.name)}</button>`).join('');
+  $('#tag-chips').innerHTML = toggleChips(
+    ctx.tags.map((t) => ({ value: t.name, label: t.name, color: t.color })), selectedTags, 'tag');
 }
 
 async function saveEntry(e) {
@@ -349,11 +348,26 @@ async function saveEntry(e) {
   const btn = $('#entry-submit');
   btn.disabled = true;
   try {
-    if (editingId) await ctx.db.updateEntry(editingId, payload);
-    else await ctx.db.addEntry(payload);
-    if (fromTimer) await setTimer(null);
-    toast(editingId ? 'Eintrag geändert.' : `${fmtDuration(duration)} gespeichert.`);
-    resetForm();
+    if (editingId) {
+      await ctx.db.updateEntry(editingId, payload);
+      toast('Eintrag geändert.');
+      resetForm();
+    } else {
+      await ctx.db.addEntry(payload);
+      // Ab hier ist der Eintrag gespeichert: Formular auf jeden Fall leeren, sonst droht ein doppelter Eintrag
+      clearDraft();
+      let timerError = null;
+      if (fromTimer) {
+        try { await clearStoppedTimer(); } catch (err) { timerError = err; }
+      }
+      resetForm({ fillTimer: false });
+      if (timerError) {
+        console.error(timerError);
+        toast(`${fmtDuration(duration)} gespeichert, aber der Timer konnte nicht zurückgesetzt werden. Bitte „Verwerfen“ klicken.`, { error: true });
+      } else {
+        toast(`${fmtDuration(duration)} gespeichert.`);
+      }
+    }
     await ctx.reloadEntries();
     renderMine();
   } catch (err) {
@@ -361,6 +375,14 @@ async function saveEntry(e) {
   } finally {
     btn.disabled = false;
   }
+}
+
+// Gestoppten Timer zurücksetzen – aber nur, wenn er in der Datenbank noch gestoppt ist
+// (nicht, wenn er inzwischen auf einem anderen Gerät wieder läuft).
+async function clearStoppedTimer() {
+  const segs = await freshSegments();
+  if (timerState(segs) === 'stopped') await setTimer(null);
+  else renderTimer();
 }
 
 // ---------------------------------------------------------------------

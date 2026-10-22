@@ -51,6 +51,24 @@ export function tagChips(tagNames, tagMap) {
     `<span class="chip" style="--c:${esc(tagMap.get(name)?.color || '#6b7280')}">${esc(name)}</span>`).join('');
 }
 
+// Chips zum An- und Abwählen (Tags, Personen). items: [{ value, label, color }],
+// key: Name des data-Attributs, an dem toggleChip den Wert erkennt.
+export function toggleChips(items, selected, key) {
+  return items.map(({ value, label, color }) =>
+    `<button type="button" class="chip" data-${key}="${esc(value)}" style="--c:${esc(color)}"
+      aria-pressed="${selected.has(value)}">${esc(label)}</button>`).join('');
+}
+
+// Klick auf einen Chip aus toggleChips: Wert im Set umschalten. true, wenn ein Chip getroffen wurde.
+export function toggleChip(e, set, key) {
+  const chip = e.target.closest('button.chip');
+  if (!chip) return false;
+  const value = chip.dataset[key];
+  if (set.has(value)) set.delete(value); else set.add(value);
+  chip.setAttribute('aria-pressed', set.has(value));
+  return true;
+}
+
 export function personLabel(member) {
   if (!member) return '<span class="muted">?</span>';
   return `<span class="dot" style="--c:${esc(member.color)}"></span> ${esc(member.display_name)}`;

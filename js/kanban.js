@@ -1,6 +1,6 @@
 // Tab "Tasks": gemeinsame Aufgaben als Kanban-Board (Drag & Drop) oder als Liste.
 
-import { $, esc, fmtDate, isoDate, personLabel, tagChips, toast } from './util.js';
+import { $, esc, fmtDate, isoDate, personLabel, tagChips, toast, toggleChip, toggleChips } from './util.js';
 
 const COLUMNS = [
   ['backlog', 'Backlog'],
@@ -22,18 +22,21 @@ const PRIORITIES = { 1: 'Prio 1', 2: 'Prio 2', 3: 'Prio 3' };
 const VIEW_KEY = 'fourcast-tasks-view';
 const MAX_IMAGES = 10;        // pro Task
 const MAX_IMAGE_SIDE = 1600;  // px, Bilder werden vor dem Hochladen verkleinert
+// Hochgeladene, aber (noch) nicht gespeicherte Bilder: { pfad: Zeitpunkt }. Wird die Seite mit
+// offenem Dialog geschlossen, räumt der nächste Start sie nach einer Weile weg.
+const PENDING_KEY = 'fourcast-pending-images';
+const PENDING_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 let ctx;
 let cards = [];
-let editing = null; // Karte im Dialog, null = neu
 let dialogTags = new Set();
 let dialogAssignees = new Set();
 let dialogSubtasks = []; // [{ title, done }]
-let dialogImages = [];   // Pfade der angehängten Bilder
-let imageUrls = {};      // Pfad -> Link zum Anzeigen
-let newUploads = [];     // in diesem Dialog hochgeladen; ohne Speichern wieder löschen
-let uploading = 0;
-let saved = false;
+// Zustand des offenen Task-Dialogs. Jedes Öffnen bekommt ein neues Objekt, damit ein später
+// fertiger Upload oder Speichervorgang nicht im nächsten Dialog landet.
+// { card (null = neu), images: Pfade, urls: { pfad: Link }, uploads: hier hochgeladen,
+//   uploading, saving, saved, closed }
+let dlg = newDialogState(null);
 let draggedId = null;
 let view = loadView(); // 'board' | 'list'
 // Filter der Listenansicht ('' = alle)
@@ -76,6 +79,7 @@ export function init(c) {
   $('#card-delete').addEventListener('click', deleteCard);
   $('#card-tags').addEventListener('click', (e) => toggleChip(e, dialogTags, 'tag'));
   $('#card-assignees').addEventListener('click', (e) => toggleChip(e, dialogAssignees, 'member'));
+  cleanupPendingUploads();
 
   // Unteraufgaben
   $('#subtask-add').addEventListener('click', addSubtask);
@@ -100,6 +104,8 @@ export function init(c) {
     e.target.value = '';
   });
   dialog.addEventListener('paste', (e) => {
+    // Text (z. B. aus Word/Excel, das zusätzlich ein Bild mitliefert) normal einfügen
+    if (e.clipboardData.types.includes('text/plain')) return;
     const files = [...e.clipboardData.files].filter((f) => f.type.startsWith('image/'));
     if (!files.length) return;
     e.preventDefault();
@@ -117,13 +123,14 @@ export function init(c) {
   $('#card-images').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-remove-image]');
     if (!btn) return;
-    dialogImages.splice(Number(btn.dataset.removeImage), 1);
+    dlg.images.splice(Number(btn.dataset.removeImage), 1);
     renderImages();
   });
-  // Ohne Speichern geschlossen: frisch hochgeladene Bilder wieder entfernen
+  // Ohne Speichern geschlossen: frisch hochgeladene Bilder wieder entfernen.
+  // Läuft gerade das Speichern, entscheidet saveCard selbst, wenn es fertig ist.
   dialog.addEventListener('close', () => {
-    if (!saved && newUploads.length) ctx.db.deleteImages(newUploads).catch(console.error);
-    newUploads = [];
+    dlg.closed = true;
+    if (!dlg.saving && !dlg.saved) discardUploads(dlg);
   });
 }
 
@@ -370,15 +377,6 @@ function dialogError(message) {
   $('#card-error').hidden = !message;
 }
 
-// Chip-Auswahl (Tags, Zuständige) an- und abwählen
-function toggleChip(e, set, key) {
-  const chip = e.target.closest('button.chip');
-  if (!chip) return;
-  const value = chip.dataset[key];
-  if (set.has(value)) set.delete(value); else set.add(value);
-  chip.setAttribute('aria-pressed', set.has(value));
-}
-
 function renderSubtasks() {
   $('#subtask-list').innerHTML = dialogSubtasks.map((s, i) => `
     <li>
@@ -390,16 +388,50 @@ function renderSubtasks() {
 // ---------------------------------------------------------------------
 // Bilder
 // ---------------------------------------------------------------------
+function newDialogState(card) {
+  return {
+    card, images: [...(card?.images || [])], urls: {}, uploads: [],
+    uploading: 0, saving: false, saved: false, closed: false,
+  };
+}
+
+function pendingUploads() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY)) || {}; } catch { return {}; }
+}
+
+function markPending(paths, pending) {
+  const all = pendingUploads();
+  for (const p of paths) {
+    if (pending) all[p] = Date.now(); else delete all[p];
+  }
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(all)); } catch { /* egal */ }
+}
+
+// Übrig gebliebene Uploads früherer Sitzungen löschen (nur ältere, ein anderer Tab könnte sie noch brauchen)
+function cleanupPendingUploads() {
+  const old = Object.entries(pendingUploads())
+    .filter(([, at]) => Date.now() - at > PENDING_MAX_AGE_MS)
+    .map(([path]) => path);
+  if (old.length) ctx.db.deleteImages(old).then(() => markPending(old, false)).catch(console.error);
+}
+
+// In diesem Dialog hochgeladene Bilder löschen (nur die angegebenen, sonst alle)
+function discardUploads(d, paths = d.uploads) {
+  if (!paths.length) return;
+  ctx.db.deleteImages(paths).then(() => markPending(paths, false)).catch(console.error);
+}
+
 function renderImages() {
-  $('#card-images').innerHTML = dialogImages.map((path, i) => {
-    const url = imageUrls[path];
+  const d = dlg;
+  $('#card-images').innerHTML = d.images.map((path, i) => {
+    const url = d.urls[path];
     return `<div class="image-thumb">
       ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt=""></a>` : '<span class="muted small">Lädt …</span>'}
       <button type="button" class="icon-btn" data-remove-image="${i}" title="Bild entfernen">✕</button>
     </div>`;
   }).join('');
-  $('#image-status').textContent = uploading
-    ? `Lädt ${uploading} Bild${uploading > 1 ? 'er' : ''} hoch …`
+  $('#image-status').textContent = d.uploading
+    ? `Lädt ${d.uploading} Bild${d.uploading > 1 ? 'er' : ''} hoch …`
     : 'oder mit Strg + V einfügen / hineinziehen';
 }
 
@@ -418,36 +450,41 @@ async function compressImage(file) {
 }
 
 async function addImages(files) {
+  const d = dlg;
+  if (d.closed) return;
   dialogError('');
-  const room = MAX_IMAGES - dialogImages.length - uploading;
+  const room = MAX_IMAGES - d.images.length - d.uploading;
   if (files.length > room) dialogError(`Maximal ${MAX_IMAGES} Bilder pro Task.`);
   await Promise.all(files.slice(0, Math.max(0, room)).map(async (file) => {
-    uploading++;
+    d.uploading++;
     renderImages();
     try {
       const path = await ctx.db.uploadImage(await compressImage(file));
-      newUploads.push(path);
-      Object.assign(imageUrls, await ctx.db.imageUrls([path]));
-      dialogImages.push(path);
+      markPending([path], true);
+      // Dialog inzwischen zu: Bild gehört zu keinem Task mehr
+      if (d.closed) { discardUploads(d, [path]); return; }
+      d.uploads.push(path);
+      Object.assign(d.urls, await ctx.db.imageUrls([path]));
+      d.images.push(path);
     } catch (err) {
-      dialogError(`Bild konnte nicht hochgeladen werden: ${err.message || err}`);
+      if (d === dlg) dialogError(`Bild konnte nicht hochgeladen werden: ${err.message || err}`);
     } finally {
-      uploading--;
-      renderImages();
+      d.uploading--;
+      if (d === dlg) renderImages();
     }
   }));
 }
 
 async function loadImageUrls() {
-  imageUrls = {};
+  const d = dlg;
   renderImages();
-  if (!dialogImages.length) return;
+  if (!d.images.length) return;
   try {
-    imageUrls = await ctx.db.imageUrls(dialogImages);
+    d.urls = await ctx.db.imageUrls(d.images);
   } catch (err) {
-    dialogError(`Bilder konnten nicht geladen werden: ${err.message || err}`);
+    if (d === dlg) dialogError(`Bilder konnten nicht geladen werden: ${err.message || err}`);
   }
-  renderImages();
+  if (d === dlg) renderImages();
 }
 
 function addSubtask() {
@@ -471,7 +508,7 @@ function renderChoices() {
 
 // Neue Tasks: Backlog, Design, Prio 3 – ausser man klickt auf eine Zelle im Board
 function openDialog(card, status = 'backlog', category = '') {
-  editing = card;
+  dlg = newDialogState(card);
   const form = $('#card-form');
   form.reset();
   dialogError('');
@@ -484,18 +521,13 @@ function openDialog(card, status = 'backlog', category = '') {
   form.due_date.value = card?.due_date || '';
 
   dialogAssignees = new Set(card?.assignees || []);
-  $('#card-assignees').innerHTML = ctx.members.map((m) =>
-    `<button type="button" class="chip" data-member="${esc(m.github_username)}" style="--c:${esc(m.color)}"
-      aria-pressed="${dialogAssignees.has(m.github_username)}">${esc(m.display_name)}</button>`).join('');
+  $('#card-assignees').innerHTML = toggleChips(
+    ctx.members.map((m) => ({ value: m.github_username, label: m.display_name, color: m.color })), dialogAssignees, 'member');
   dialogTags = new Set(card?.tags || []);
-  $('#card-tags').innerHTML = ctx.tags.map((t) =>
-    `<button type="button" class="chip" data-tag="${esc(t.name)}" style="--c:${esc(t.color)}"
-      aria-pressed="${dialogTags.has(t.name)}">${esc(t.name)}</button>`).join('');
+  $('#card-tags').innerHTML = toggleChips(
+    ctx.tags.map((t) => ({ value: t.name, label: t.name, color: t.color })), dialogTags, 'tag');
   dialogSubtasks = structuredClone(card?.subtasks || []);
   renderSubtasks();
-  dialogImages = [...(card?.images || [])];
-  newUploads = [];
-  saved = false;
   loadImageUrls();
 
   $('#card-delete').hidden = !card;
@@ -513,7 +545,10 @@ async function saveCard(e) {
   if (!form.status.value) { dialogError('Bitte eine Spalte wählen.'); return; }
   if (!form.category.value) { dialogError('Bitte eine Kategorie wählen.'); return; }
   if (!form.priority.value) { dialogError('Bitte eine Priorität wählen.'); return; }
-  if (uploading) { dialogError('Bitte warten, bis die Bilder hochgeladen sind.'); return; }
+  const d = dlg;
+  if (d.uploading) { dialogError('Bitte warten, bis die Bilder hochgeladen sind.'); return; }
+  if (d.saving) return;
+  const editing = d.card;
 
   const status = form.status.value;
   const payload = {
@@ -526,7 +561,7 @@ async function saveCard(e) {
     due_date: form.due_date.value || null,
     tags: ctx.tags.map((t) => t.name).filter((n) => dialogTags.has(n)),
     subtasks: dialogSubtasks,
-    images: dialogImages,
+    images: [...d.images],
   };
   // Neue Karte oder Spalten-/Kategoriewechsel: ans Ende der Zelle
   if (!editing || editing.status !== status || (editing.category || null) !== payload.category) {
@@ -534,29 +569,35 @@ async function saveCard(e) {
     payload.position = cell.length ? cell.at(-1).position + 1 : 0;
   }
 
+  d.saving = true;
   try {
     if (editing) await ctx.db.updateCard(editing.id, payload);
     else await ctx.db.addCard(payload);
-    saved = true;
+    d.saved = true;
+    markPending(payload.images, false);
     // Entfernte Bilder (auch eben hochgeladene) auch im Speicher löschen
-    const removed = [...(editing?.images || []), ...newUploads].filter((p) => !dialogImages.includes(p));
-    if (removed.length) ctx.db.deleteImages(removed).catch(console.error);
-    $('#card-dialog').close();
+    const removed = [...(editing?.images || []), ...d.uploads].filter((p) => !payload.images.includes(p));
+    discardUploads(d, removed);
+    if (d === dlg && !d.closed) $('#card-dialog').close();
     toast(editing ? 'Task gespeichert.' : 'Task angelegt.');
     await show();
   } catch (err) {
-    dialogError(err.message || String(err));
+    // Dialog wurde während des Speicherns geschlossen: Bilder gehören zu keinem Task
+    if (d.closed) { discardUploads(d); ctx.fail(err); } else dialogError(err.message || String(err));
+  } finally {
+    d.saving = false;
   }
 }
 
 async function deleteCard() {
-  if (!editing || !confirm(`Task „${editing.title}“ löschen?`)) return;
+  const d = dlg;
+  const card = d.card;
+  if (!card || !confirm(`Task „${card.title}“ löschen?`)) return;
   try {
-    await ctx.db.deleteCard(editing.id);
+    await ctx.db.deleteCard(card.id);
     // Alle Bilder des Tasks (auch eben hochgeladene) löschen
-    const images = [...new Set([...(editing.images || []), ...newUploads])];
-    if (images.length) ctx.db.deleteImages(images).catch(console.error);
-    newUploads = [];
+    d.saved = true;
+    discardUploads(d, [...new Set([...card.images, ...d.uploads])]);
     $('#card-dialog').close();
     toast('Task gelöscht.');
     await show();
