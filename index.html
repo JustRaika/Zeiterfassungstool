@@ -94,26 +94,32 @@
             <h2 id="form-title">Zeit eintragen</h2>
             <p id="timer-note" class="timer-note small" hidden>⏱ Zeit aus dem Timer übernommen. Beim Speichern wird der Timer zurückgesetzt.</p>
             <div class="fields">
-              <label class="field">Datum
-                <input type="date" name="date" required>
-              </label>
+              <div>
+                <label class="field">Datum
+                  <input type="date" name="date" required aria-describedby="err-date">
+                </label>
+                <p id="err-date" class="error-text field-error" hidden></p>
+              </div>
               <div class="duration">
                 <label class="field">Stunden
-                  <input type="number" name="hours" min="0" max="24" step="1" inputmode="numeric" placeholder="0">
+                  <input type="number" name="hours" min="0" max="24" step="1" inputmode="numeric" placeholder="0" aria-describedby="err-duration">
                 </label>
                 <label class="field">Minuten
-                  <input type="number" name="minutes" min="0" max="59" step="1" inputmode="numeric" placeholder="0">
+                  <input type="number" name="minutes" min="0" max="59" step="1" inputmode="numeric" placeholder="0" aria-describedby="err-duration">
                 </label>
+                <p id="err-duration" class="error-text field-error" hidden></p>
               </div>
             </div>
-            <fieldset class="field">
+            <fieldset class="field" aria-describedby="err-tags">
               <legend>Tags <span class="muted">(mind. einer)</span></legend>
               <div id="tag-chips" class="chips"></div>
+              <p id="err-tags" class="error-text field-error" hidden></p>
               <p class="muted small tag-hint">Ein Tag fehlt? Frag Nika.</p>
             </fieldset>
             <label class="field"><span>Kommentar <span class="muted">(kurzes Stichwort, mind. 3 Zeichen)</span></span>
-              <textarea name="comment" rows="2" minlength="3" maxlength="500" required placeholder="z. B. Level 2 Blockout"></textarea>
+              <textarea name="comment" rows="2" minlength="3" maxlength="500" required placeholder="z. B. Level 2 Blockout" aria-describedby="err-comment"></textarea>
             </label>
+            <p id="err-comment" class="error-text field-error" hidden></p>
             <div class="row">
               <button type="submit" id="entry-submit" class="btn primary">Speichern</button>
               <button type="button" id="entry-cancel" class="btn ghost" hidden>Abbrechen</button>

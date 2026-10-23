@@ -28,9 +28,16 @@ export function init(c) {
   $('#timer-discard').addEventListener('click', discardTimer);
   form.addEventListener('submit', saveEntry);
   form.comment.addEventListener('input', saveDraft);
+  // Wer ein Feld korrigiert, soll die Fehlermeldung dazu nicht mehr sehen
+  form.addEventListener('input', (e) => {
+    const errorId = e.target.getAttribute('aria-describedby');
+    if (errorId?.startsWith('err-')) setError(errorId.slice(4));
+  });
   $('#entry-cancel').addEventListener('click', resetForm);
   $('#tag-chips').addEventListener('click', (e) => {
-    if (toggleChip(e, selectedTags, 'tag')) saveDraft();
+    if (!toggleChip(e, selectedTags, 'tag')) return;
+    saveDraft();
+    if (selectedTags.size) setError('tags');
   });
   $('#my-entries').addEventListener('click', onListClick);
   document.addEventListener('keydown', onSpace);
@@ -87,6 +94,7 @@ export function editEntry(entry) {
   $('#entry-submit').textContent = 'Änderungen speichern';
   $('#entry-cancel').hidden = false;
   $('#timer-note').hidden = true;
+  showErrors([]);
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -103,6 +111,7 @@ function resetForm({ fillTimer = true } = {}) {
   $('#entry-submit').textContent = 'Speichern';
   $('#entry-cancel').hidden = true;
   $('#timer-note').hidden = true;
+  showErrors([]);
   if (fillTimer) fillFromTimer();
 }
 
@@ -292,6 +301,8 @@ function fillFromTimer() {
   form.date.value = isoDate(segs[0].start);
   form.hours.value = Math.floor(minutes / 60);
   form.minutes.value = minutes % 60;
+  setError('date');
+  setError('duration');
   $('#timer-note').hidden = false;
 }
 
@@ -322,26 +333,58 @@ function renderTagChips() {
     ctx.tags.map((t) => ({ value: t.name, label: t.name, color: t.color })), selectedTags, 'tag');
 }
 
+// Fehlermeldungen stehen direkt unter dem jeweiligen Feld, alle auf einmal.
+// Welche Felder zu einer Meldung gehören, steht im HTML: aria-describedby="err-<key>".
+function setError(key, message = '') {
+  const el = $(`#err-${key}`);
+  if (!message && el.hidden) return;
+  el.textContent = message;
+  el.hidden = !message;
+  for (const field of form.querySelectorAll(`[aria-describedby="err-${key}"]`)) {
+    if (message) field.setAttribute('aria-invalid', 'true');
+    else field.removeAttribute('aria-invalid');
+  }
+}
+
+// errors: [[key, Meldung, Feld für den Fokus], …] in Formular-Reihenfolge
+function showErrors(errors) {
+  const messages = Object.fromEntries(errors);
+  for (const el of form.querySelectorAll('.field-error')) {
+    const key = el.id.slice(4);
+    setError(key, messages[key]);
+  }
+}
+
+function validate({ date, hours, mins, duration, tags, comment }) {
+  const errors = [];
+  if (!date) errors.push(['date', 'Bitte ein Datum wählen.', form.date]);
+  if (hours < 0 || mins < 0 || mins > 59) errors.push(['duration', 'Minuten bitte zwischen 0 und 59.', form.minutes]);
+  else if (duration <= 0) errors.push(['duration', 'Bitte eintragen, wie lange du gearbeitet hast.', form.hours]);
+  else if (duration > MAX_MINUTES) errors.push(['duration', 'Höchstens 24 Stunden pro Eintrag.', form.hours]);
+  if (!tags.length) errors.push(['tags', 'Bitte mindestens einen Tag wählen.', $('#tag-chips button')]);
+  if (comment.length < MIN_COMMENT) {
+    errors.push(['comment', `Bitte ein kurzes Stichwort schreiben (mind. ${MIN_COMMENT} Zeichen).`, form.comment]);
+  }
+  return errors;
+}
+
 async function saveEntry(e) {
   e.preventDefault();
   const hours = parseInt(form.hours.value, 10) || 0;
   const mins = parseInt(form.minutes.value, 10) || 0;
   const duration = hours * 60 + mins;
-
-  if (!form.date.value) return toast('Bitte ein Datum wählen.', { error: true });
-  if (hours < 0 || mins < 0 || mins > 59) return toast('Minuten bitte zwischen 0 und 59.', { error: true });
-  if (duration <= 0) return toast('Bitte eine Dauer eintragen.', { error: true });
-  if (duration > MAX_MINUTES) return toast('Maximal 24 Stunden pro Eintrag.', { error: true });
-
+  const date = form.date.value;
   const tags = ctx.tags.map((t) => t.name).filter((n) => selectedTags.has(n));
   const comment = form.comment.value.trim();
-  if (!tags.length) return toast('Bitte mindestens einen Tag wählen.', { error: true });
-  if (comment.length < MIN_COMMENT) {
-    form.comment.focus();
-    return toast(`Bitte einen kurzen Kommentar schreiben (mind. ${MIN_COMMENT} Zeichen).`, { error: true });
+
+  const errors = validate({ date, hours, mins, duration, tags, comment });
+  showErrors(errors);
+  if (errors.length) {
+    errors[0][2]?.focus();
+    return;
   }
 
-  const payload = { date: form.date.value, duration_minutes: duration, tags, comment };
+  const payload = { date, duration_minutes: duration, tags, comment };
   // Ein neuer Eintrag "verbraucht" einen gestoppten Timer
   const fromTimer = !editingId && timerState(segments()) === 'stopped';
 

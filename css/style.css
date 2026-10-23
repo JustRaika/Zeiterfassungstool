@@ -127,7 +127,14 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
 fieldset.field legend { padding: 0; margin-bottom: 6px; }
 form .field { margin-bottom: 14px; }
 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
-.duration { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.duration { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.duration .field-error { grid-column: 1 / -1; }
+
+/* Fehler direkt am Feld: rückt unter das Feld, rotes Feld daneben */
+.field-error { margin: -8px 0 14px; font-weight: 500; }
+fieldset .field-error { margin: 8px 0 0; }
+input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger); }
+fieldset[aria-invalid="true"] legend { color: var(--danger); }
 .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
 
 input, select, textarea {
