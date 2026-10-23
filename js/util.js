@@ -74,6 +74,31 @@ export function personLabel(member) {
   return `<span class="dot" style="--c:${esc(member.color)}"></span> ${esc(member.display_name)}`;
 }
 
+// Kleine Strich-Icons (24er-Raster), übernehmen Farbe und Grösse vom umgebenden Text
+const ICONS = {
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+  checklist: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 12 2 2 4-4"/>',
+  close: '<path d="M18 6 6 18M6 6l12 12"/>',
+};
+
+export function icon(name) {
+  return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
+}
+
+// Eigener Bestätigungsdialog statt confirm(). true, wenn bestätigt; Esc, Abbrechen oder
+// ein Klick daneben ergeben false.
+export function confirmDialog(message, okLabel = 'Löschen') {
+  const dialog = $('#confirm-dialog');
+  $('#confirm-text').textContent = message;
+  $('#confirm-ok').textContent = okLabel;
+  dialog.returnValue = '';
+  dialog.showModal();
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'ok'), { once: true });
+  });
+}
+
 let toastTimer;
 export function toast(message, { error = false } = {}) {
   const el = $('#toast');

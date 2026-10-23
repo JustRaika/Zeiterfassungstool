@@ -131,7 +131,9 @@ form .field { margin-bottom: 14px; }
 .duration .field-error { grid-column: 1 / -1; }
 
 /* Fehler direkt am Feld: rückt unter das Feld, rotes Feld daneben */
-.field-error { margin: -8px 0 14px; font-weight: 500; }
+.field-error { font-weight: 500; }
+/* Zeilen direkt unter einem Feld: rücken an das Feld heran (gleicht dessen margin-bottom: 14px aus) */
+.field-error, .comment-suggestions { margin: -8px 0 14px; }
 fieldset .field-error { margin: 8px 0 0; }
 input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger); }
 fieldset[aria-invalid="true"] legend { color: var(--danger); }
@@ -151,7 +153,7 @@ input, select, textarea {
 /* Einheitliche Höhe, damit Datums- und Auswahlfelder nebeneinander bündig sind */
 input:not([type="checkbox"]), select { height: 40px; }
 input:focus, select:focus, textarea:focus, .btn:focus-visible, .chip:focus-visible,
-.kanban-card:focus-visible, .task-table tbody tr:focus-visible {
+.kanban-card:focus-visible, .task-table tbody tr:focus-visible, .link-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -208,6 +210,20 @@ label.chip input { position: absolute; opacity: 0; width: 0; height: 0; pointer-
 label.chip:has(input:checked) { background: color-mix(in srgb, var(--c) 28%, transparent); border-color: var(--c); color: var(--text); }
 label.chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
 .tag-hint { margin: 8px 0 0; font-weight: 400; }
+
+/* Letzte Kommentare als Textvorschläge unter dem Kommentarfeld (bewusst keine Chips, die sähen aus wie Tags) */
+.comment-suggestions { color: var(--muted); }
+.comment-suggestions:empty { display: none; }
+.link-btn {
+  font: inherit;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 /* ---------- Timer ---------- */
 .timer-display {
@@ -317,14 +333,13 @@ input.flash { animation: flash 1.6s ease-out; }
   grid-template-columns: 1fr auto;
   gap: 2px 8px;
   align-items: baseline;
-  padding: 8px 4px 8px 10px;
+  padding: 8px 4px;
   border-top: 1px solid var(--border);
-  border-left: 3px solid var(--c, var(--accent));
   cursor: var(--cursor), pointer;
 }
 .upcoming li:first-child { border-top: 0; }
 .upcoming li:hover { background: var(--surface-2); }
-.upcoming li.empty { border-left: 0; padding-left: 0; cursor: default; }
+.upcoming li.empty { padding-left: 0; cursor: default; }
 .upcoming .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .upcoming .countdown { white-space: nowrap; font-size: 0.8rem; grid-row: 1; grid-column: 2; }
 .upcoming .what { grid-column: 1 / -1; }
@@ -339,16 +354,6 @@ input.flash { animation: flash 1.6s ease-out; }
 }
 #calendar .fc-daygrid-dot-event.milestone .fc-daygrid-event-dot,
 #calendar .fc-list-event.milestone .fc-list-event-dot { border-color: #c4a7f5; }
-.upcoming li.milestone { position: relative; border-left-color: transparent; }
-.upcoming li.milestone::before {
-  content: "";
-  position: absolute;
-  left: -3px;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--milestone);
-}
 .star { background: var(--milestone); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .checks { gap: 20px; }
 .checks .check { margin-bottom: 14px; }
@@ -409,7 +414,6 @@ kbd {
 .kanban-card {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--c, var(--border));
   border-radius: 8px;
   padding: 10px;
   display: flex;
@@ -417,7 +421,7 @@ kbd {
   gap: 6px;
   cursor: var(--cursor), grab;
 }
-.kanban-card:hover { border-color: #4a4a58; border-left-color: var(--c, #4a4a58); }
+.kanban-card:hover { border-color: #4a4a58; }
 .kanban-card.dragging { opacity: 0.35; }
 .kanban-card.drop-before { box-shadow: 0 -3px 0 var(--accent); }
 .kanban-list.drop-end { box-shadow: inset 0 -3px 0 var(--accent); }
@@ -456,7 +460,6 @@ kbd {
 }
 .segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
 .task-table tbody tr:hover { background: var(--surface-2); }
-.task-table td:first-child { border-left: 4px solid var(--c); }
 .task-table .task-title { font-weight: 600; min-width: 200px; }
 .task-table tr.done .task-title { color: var(--muted); text-decoration: line-through; }
 .task-table td { vertical-align: middle; }
@@ -518,6 +521,21 @@ dialog {
   width: min(460px, calc(100vw - 32px));
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.4); }
+.confirm-dialog { width: min(380px, calc(100vw - 32px)); }
+.confirm-dialog p { margin: 0 0 16px; }
+
+/* Strich-Icons aus util.js icon() */
+.icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
 /* Titel direkt als Überschrift bearbeiten: sieht aus wie ein Titel, ohne Rahmen */
 dialog input.title-input {
   height: auto;
@@ -580,9 +598,7 @@ dialog input.title-input::placeholder { color: var(--muted); }
   .entry-list li { grid-template-columns: auto 1fr auto; }
   .entry-list .tags-cell { grid-column: 1 / -1; grid-row: 2; }
   .entry-list .comment { grid-column: 1 / -1; grid-row: 3; }
-  /* Drei Knöpfe passen nicht mehr neben Datum und Dauer: eigene Zeile darunter */
-  /* -6px gleicht das Innen-Padding der .icon-btn aus, damit der Text bündig mit dem Datum steht */
-  .entry-list .actions { grid-column: 1 / -1; grid-row: 4; margin-left: -6px; }
+  .entry-list .actions { grid-column: 3; grid-row: 1; }
   #user-name { display: none; }
   #calendar .fc-toolbar { flex-wrap: wrap; gap: 8px; }
   #calendar .fc-toolbar-title { font-size: 1rem; }

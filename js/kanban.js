@@ -1,6 +1,8 @@
 // Tab "Tasks": gemeinsame Aufgaben als Kanban-Board (Drag & Drop) oder als Liste.
 
-import { $, esc, fmtDate, isoDate, personLabel, tagChips, toast, toggleChip, toggleChips } from './util.js';
+import {
+  $, confirmDialog, esc, fmtDate, icon, isoDate, personLabel, tagChips, toast, toggleChip, toggleChips,
+} from './util.js';
 
 const COLUMNS = [
   ['backlog', 'Backlog'],
@@ -164,6 +166,11 @@ function cardsIn(status, category) {
     .sort((a, b) => a.position - b.position);
 }
 
+// Farbe einer Kategorie; Tasks ohne (gültige) Kategorie bleiben neutral
+function catColor(category) {
+  return CATEGORIES[category]?.color || 'var(--border)';
+}
+
 // Zuständige: bis zwei mit Namen, sonst nur farbige Punkte
 function assigneesHtml(c) {
   const people = c.assignees.map((u) => ctx.memberMap.get(u)).filter(Boolean);
@@ -176,13 +183,13 @@ function assigneesHtml(c) {
 function subtaskProgress(c) {
   if (!c.subtasks.length) return '';
   const done = c.subtasks.filter((s) => s.done).length;
-  return `<span class="subtask-progress${done === c.subtasks.length ? ' complete' : ''}">☑ ${done}/${c.subtasks.length}</span>`;
+  return `<span class="subtask-progress${done === c.subtasks.length ? ' complete' : ''}" title="Unteraufgaben">${icon('checklist')} ${done}/${c.subtasks.length}</span>`;
 }
 
 function dueHtml(c) {
   if (!c.due_date) return '';
   const overdue = c.status !== 'done' && c.due_date < isoDate();
-  return `<span class="${overdue ? 'overdue' : 'muted'}">📅 ${esc(fmtDate(c.due_date))}</span>`;
+  return `<span class="${overdue ? 'overdue' : 'muted'}" title="Fällig">${icon('calendar')} ${esc(fmtDate(c.due_date))}</span>`;
 }
 
 // ---------------------------------------------------------------------
@@ -200,7 +207,7 @@ function renderBoard() {
     </header>`).join('');
 
   const rows = lanes.map((category) => `
-    <div class="kanban-lane-sep" style="--c:${CATEGORIES[category]?.color || 'var(--border)'}"></div>
+    <div class="kanban-lane-sep" style="--c:${catColor(category)}"></div>
     ${COLUMNS.map(([status]) => `
       <div class="kanban-list" data-status="${status}" data-category="${category}" title="Klicken, um hier einen Task anzulegen">
         ${cardsIn(status, category).map(cardHtml).join('')}
@@ -210,12 +217,12 @@ function renderBoard() {
 }
 
 function cardHtml(c) {
-  return `<article class="kanban-card" draggable="true" tabindex="0" role="button" data-id="${esc(c.id)}"
-      style="--c:${CATEGORIES[c.category]?.color || 'var(--border)'}">
+  // Die Kategorie zeigt die Zeile (Swimlane) auf dem Board, die Karte selbst braucht keine Farbe
+  return `<article class="kanban-card" draggable="true" tabindex="0" role="button" data-id="${esc(c.id)}">
     <div class="kanban-badges">
       <span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span>
       ${subtaskProgress(c)}
-      ${c.images.length ? `<span class="muted" title="Bilder">🖼 ${c.images.length}</span>` : ''}
+      ${c.images.length ? `<span class="muted" title="Bilder">${icon('image')} ${c.images.length}</span>` : ''}
     </div>
     <div class="kanban-title">${esc(c.title)}</div>
     ${c.tags.length ? `<div class="chips">${tagChips(c.tags, ctx.tagMap)}</div>` : ''}
@@ -297,9 +304,9 @@ function renderList() {
   $('#task-list').innerHTML = `<div class="table-wrap"><table class="entries task-table">
     <thead><tr><th>Aufgabe</th><th>Spalte</th><th>Prio</th><th>Zuständig</th><th>Fällig</th><th>Unteraufgaben</th></tr></thead>
     <tbody>${sorted.map((c) => `
-      <tr data-id="${esc(c.id)}" tabindex="0" class="${c.status === 'done' ? 'done' : ''}"
-          style="--c:${CATEGORIES[c.category]?.color || 'var(--border)'}">
-        <td class="task-title">${esc(c.title)}</td>
+      <tr data-id="${esc(c.id)}" tabindex="0" class="${c.status === 'done' ? 'done' : ''}">
+        <td class="task-title"><span class="dot" title="${esc(CATEGORIES[c.category]?.label || 'Ohne Kategorie')}"
+          style="--c:${catColor(c.category)}"></span> ${esc(c.title)}</td>
         <td class="nowrap">${statusLabel[c.status]}</td>
         <td><span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span></td>
         <td class="nowrap">${assigneesHtml(c)}</td>
@@ -395,7 +402,7 @@ function renderSubtasks() {
   $('#subtask-list').innerHTML = dialogSubtasks.map((s, i) => `
     <li>
       <label class="check"><input type="checkbox" data-done="${i}" ${s.done ? 'checked' : ''}> <span>${esc(s.title)}</span></label>
-      <button type="button" class="icon-btn" data-remove="${i}" title="Entfernen">✕</button>
+      <button type="button" class="icon-btn" data-remove="${i}" title="Entfernen" aria-label="Unteraufgabe entfernen">${icon('close')}</button>
     </li>`).join('');
 }
 
@@ -441,7 +448,7 @@ function renderImages() {
     const url = d.urls[path];
     return `<div class="image-thumb">
       ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt=""></a>` : '<span class="muted small">Lädt …</span>'}
-      <button type="button" class="icon-btn" data-remove-image="${i}" title="Bild entfernen">✕</button>
+      <button type="button" class="icon-btn" data-remove-image="${i}" title="Bild entfernen" aria-label="Bild entfernen">${icon('close')}</button>
     </div>`;
   }).join('');
   $('#image-status').textContent = d.uploading
@@ -606,7 +613,7 @@ async function saveCard(e) {
 async function deleteCard() {
   const d = dlg;
   const card = d.card;
-  if (!card || !confirm(`Task „${card.title}“ löschen?`)) return;
+  if (!card || !await confirmDialog(`Task „${card.title}“ löschen?`)) return;
   try {
     await ctx.db.deleteCard(card.id);
     // Alle Bilder des Tasks (auch eben hochgeladene) löschen

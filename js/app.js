@@ -1,7 +1,7 @@
 // Einstieg: Login prüfen, gemeinsame Daten laden, Tabs umschalten.
 
 import { createDb } from './db.js';
-import { $, esc, toast } from './util.js';
+import { $, confirmDialog, esc, toast } from './util.js';
 import * as erfassen from './erfassen.js';
 import * as uebersicht from './uebersicht.js';
 import * as kalender from './kalender.js';
@@ -119,8 +119,8 @@ function setupHeader() {
       ctx.db.setDemoUser(sel.value);
       location.reload();
     });
-    $('#demo-reset').addEventListener('click', () => {
-      if (!confirm('Alle Demo-Daten zurücksetzen?')) return;
+    $('#demo-reset').addEventListener('click', async () => {
+      if (!await confirmDialog('Alle Demo-Daten zurücksetzen?', 'Zurücksetzen')) return;
       ctx.db.resetDemo();
       location.reload();
     });

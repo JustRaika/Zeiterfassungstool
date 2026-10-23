@@ -1,12 +1,13 @@
 // Tab "Erfassen": Start/Stop-Timer, Formular, eigene Einträge.
 
 import {
-  $, esc, fmtDate, fmtDuration, fmtHours, hhmm, isoDate, sumMinutes, tagChips, toast, toggleChip, toggleChips,
+  $, confirmDialog, esc, fmtDate, fmtDuration, fmtHours, hhmm, isoDate, sumMinutes, tagChips, toast, toggleChip, toggleChips,
 } from './util.js';
 
 const MAX_MINUTES = 24 * 60;
 const RECENT_COUNT = 15;
 const TAG_HISTORY = 30; // so viele eigene Einträge bestimmen die Tag-Reihenfolge
+const SUGGESTION_COUNT = 3; // letzte eigene Kommentare als Vorschlag unter dem Kommentarfeld
 const MIN_COMMENT = 3;
 const DRAFT_KEY = 'fourcast-entry-draft';
 
@@ -40,6 +41,14 @@ export function init(c) {
     if (!toggleChip(e, selectedTags, 'tag')) return;
     saveDraft();
     if (selectedTags.size) setError('tags');
+  });
+  $('#comment-suggestions').addEventListener('click', (e) => {
+    const btn = e.target.closest('.link-btn');
+    if (!btn) return;
+    form.comment.value = btn.textContent;
+    saveDraft();
+    setError('comment');
+    form.comment.focus();
   });
   $('#my-entries').addEventListener('click', onListClick);
   document.addEventListener('keydown', onSpace);
@@ -112,6 +121,7 @@ export function editEntry(entry) {
   $('#entry-submit').textContent = 'Änderungen speichern';
   $('#entry-cancel').hidden = false;
   $('#timer-note').hidden = true;
+  $('#comment-suggestions').hidden = true;
   showErrors([]);
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -129,6 +139,7 @@ function resetForm({ fillTimer = true } = {}) {
   $('#entry-submit').textContent = 'Speichern';
   $('#entry-cancel').hidden = true;
   $('#timer-note').hidden = true;
+  $('#comment-suggestions').hidden = false;
   showErrors([]);
   if (fillTimer) fillFromTimer();
 }
@@ -182,7 +193,6 @@ function renderTimer() {
   const state = timerState(segs);
   $('.timer-card').classList.toggle('running', state === 'running');
   $('.timer-card').classList.toggle('paused', state === 'paused');
-  $('.timer-card').classList.toggle('stopped', state === 'stopped');
   $('#timer-start').hidden = state !== 'idle';
   $('#timer-pause').hidden = state !== 'running';
   $('#timer-resume').hidden = state !== 'paused' && state !== 'stopped';
@@ -201,7 +211,7 @@ function renderTimer() {
     } else if (state === 'stopped') {
       $('#timer-hint').textContent = 'Gestoppt. Die Zeit steht im Formular, bitte noch speichern.';
     } else {
-      $('#timer-hint').innerHTML = `<span class="pause-clock">⏸ Pause ${fmtClock(now - segs.at(-1).end)}</span>`;
+      $('#timer-hint').innerHTML = `<span class="pause-clock">Pause ${fmtClock(now - segs.at(-1).end)}</span>`;
     }
     renderStamps(segs, state, now);
   };
@@ -227,16 +237,16 @@ function stampsHtml(segs, state, now) {
     if (i > 0) {
       const pause = s.start - segs[i - 1].end;
       pauseTotal += pause;
-      rows.push(`<li class="stamp-pause">⏸ Pause <span>${fmtSpan(pause)}</span></li>`);
+      rows.push(`<li class="stamp-pause">Pause <span>${fmtSpan(pause)}</span></li>`);
     }
-    rows.push(`<li>▶ ${fmtStamp(s.start)} – ${s.end ? hhmm(s.end) : 'läuft'} <span>${fmtSpan((s.end || now) - s.start)}</span></li>`);
+    rows.push(`<li>${fmtStamp(s.start)} – ${s.end ? hhmm(s.end) : 'läuft'} <span>${fmtSpan((s.end || now) - s.start)}</span></li>`);
   });
   if (state === 'paused') {
     const pause = now - segs.at(-1).end;
     pauseTotal += pause;
-    rows.push(`<li class="stamp-pause">⏸ Pause seit ${hhmm(segs.at(-1).end)} <span>${fmtSpan(pause)}</span></li>`);
+    rows.push(`<li class="stamp-pause">Pause seit ${hhmm(segs.at(-1).end)} <span>${fmtSpan(pause)}</span></li>`);
   } else if (state === 'stopped') {
-    rows.push(`<li class="stamp-stop">■ Gestoppt <span>${hhmm(segs.at(-1).end)}</span></li>`);
+    rows.push(`<li>Gestoppt <span>${hhmm(segs.at(-1).end)}</span></li>`);
   }
   return rows.join('') +
     (pauseTotal ? `<li class="stamp-total">Pausen gesamt <span>${fmtSpan(pauseTotal)}</span></li>` : '');
@@ -335,7 +345,7 @@ function flashForm() {
 }
 
 async function discardTimer() {
-  if (!confirm('Timer verwerfen? Die gestempelte Zeit wird nicht gespeichert.')) return;
+  if (!await confirmDialog('Timer verwerfen? Die gestempelte Zeit wird nicht gespeichert.', 'Verwerfen')) return;
   const wasStopped = timerState(segments()) === 'stopped';
   try {
     await setTimer(null);
@@ -461,6 +471,7 @@ function renderMine() {
     <span>Dieser Monat <b>${fmtHours(sumMinutes(mine.filter((e) => e.date >= monthFrom)))}</b></span>
     <span>Gesamt <b>${fmtHours(sumMinutes(mine))}</b></span>`;
 
+  renderSuggestions(mine);
   if (!mine.length) {
     $('#my-entries').innerHTML = '<p class="empty">Noch keine Einträge. Leg los!</p>';
     return;
@@ -471,7 +482,6 @@ function renderMine() {
       <span class="dur">${fmtDuration(e.duration_minutes)}</span>
       <span class="chips tags-cell">${tagChips(e.tags, ctx.tagMap)}</span>
       <span class="actions">
-        <button class="icon-btn" data-repeat="${e.id}" title="Tags und Kommentar ins Formular übernehmen">Nochmal</button>
         <button class="icon-btn" data-edit="${e.id}">Bearbeiten</button>
         <button class="icon-btn" data-delete="${e.id}">Löschen</button>
       </span>
@@ -480,23 +490,17 @@ function renderMine() {
     ${mine.length > RECENT_COUNT ? `<p class="muted small">Alle ${mine.length} Einträge siehst du in der Übersicht.</p>` : ''}`;
 }
 
-// Tags und Kommentar eines früheren Eintrags für einen neuen übernehmen (Datum und Dauer bleiben)
-function repeatEntry(entry) {
-  if (editingId) resetForm();
-  selectedTags = new Set(entry.tags);
-  form.comment.value = entry.comment || '';
-  renderTagChips();
-  saveDraft();
-  showErrors([]);
-  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  (form.hours.value || form.minutes.value ? $('#entry-submit') : form.hours).focus({ preventScroll: true });
+// Unter dem Kommentarfeld: die letzten verschiedenen eigenen Kommentare, ein Klick setzt sie ein.
+// Leer blendet CSS die Zeile aus (:empty), beim Bearbeiten eines Eintrags editEntry (hidden).
+function renderSuggestions(mine) {
+  const comments = [...new Set(mine.map((e) => e.comment).filter(Boolean))].slice(0, SUGGESTION_COUNT);
+  $('#comment-suggestions').innerHTML = comments.length ? `Zuletzt: ${comments.map((c) =>
+    `<button type="button" class="link-btn">${esc(c)}</button>`).join(' · ')}` : '';
 }
 
 async function onListClick(e) {
-  const { repeat: repeatId, edit: editId, delete: deleteId } = e.target.dataset;
-  if (repeatId) {
-    repeatEntry(ctx.entries.find((x) => x.id === repeatId));
-  } else if (editId) {
+  const { edit: editId, delete: deleteId } = e.target.dataset;
+  if (editId) {
     editEntry(ctx.entries.find((x) => x.id === editId));
   } else if (deleteId) {
     await deleteEntry(ctx, deleteId);
@@ -508,7 +512,7 @@ async function onListClick(e) {
 export async function deleteEntry(c, id) {
   const entry = c.entries.find((x) => x.id === id);
   const owner = entry && entry.member !== c.me.github_username ? `${c.memberMap.get(entry.member)?.display_name || entry.member}: ` : '';
-  if (!entry || !confirm(`${owner}Eintrag vom ${fmtDate(entry.date)} (${fmtDuration(entry.duration_minutes)}) löschen?`)) return;
+  if (!entry || !await confirmDialog(`${owner}Eintrag vom ${fmtDate(entry.date)} (${fmtDuration(entry.duration_minutes)}) löschen?`)) return;
   try {
     await c.db.deleteEntry(id);
     c.entries = c.entries.filter((x) => x.id !== id);

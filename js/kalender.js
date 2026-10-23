@@ -1,6 +1,6 @@
 // Tab "Kalender": gemeinsame Termine mit FullCalendar (global per <script> geladen).
 
-import { $, esc, fmtDate, hhmm, isoDate, toast } from './util.js';
+import { $, confirmDialog, esc, fmtDate, hhmm, isoDate, toast } from './util.js';
 
 const HOUR_MS = 60 * 60 * 1000;
 const UPCOMING_COUNT = 5;
@@ -301,7 +301,7 @@ async function saveEvent(e) {
 }
 
 async function deleteEvent() {
-  if (!editing || !confirm(`Termin „${editing.title}“ löschen?`)) return;
+  if (!editing || !await confirmDialog(`Termin „${editing.title}“ löschen?`)) return;
   try {
     await ctx.db.deleteEvent(editing.id);
     $('#event-dialog').close();

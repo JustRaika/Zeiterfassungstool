@@ -80,10 +80,10 @@
             <div id="timer-display" class="timer-display">0:00:00</div>
             <p id="timer-hint" class="muted small">Läuft nicht.</p>
             <div class="row">
-              <button id="timer-start" class="btn primary">▶ Start</button>
-              <button id="timer-pause" class="btn" hidden>⏸ Pause</button>
-              <button id="timer-resume" class="btn" hidden>▶ Weiter</button>
-              <button id="timer-stop" class="btn primary" hidden>■ Stop &amp; eintragen</button>
+              <button id="timer-start" class="btn primary">Start</button>
+              <button id="timer-pause" class="btn" hidden>Pause</button>
+              <button id="timer-resume" class="btn" hidden>Weiter</button>
+              <button id="timer-stop" class="btn primary" hidden>Stop &amp; eintragen</button>
               <button id="timer-discard" class="btn ghost" hidden>Verwerfen</button>
             </div>
             <ul id="timer-stamps" class="stamps"></ul>
@@ -92,7 +92,7 @@
 
           <form id="entry-form" class="card" novalidate>
             <h2 id="form-title">Zeit eintragen</h2>
-            <p id="timer-note" class="timer-note small" hidden>⏱ Zeit aus dem Timer übernommen. Beim Speichern wird der Timer zurückgesetzt.</p>
+            <p id="timer-note" class="timer-note small" hidden>Zeit aus dem Timer übernommen. Beim Speichern wird der Timer zurückgesetzt.</p>
             <div class="fields">
               <div>
                 <label class="field">Datum
@@ -120,6 +120,7 @@
               <textarea name="comment" rows="2" minlength="3" maxlength="500" required placeholder="z. B. Level 2 Blockout" aria-describedby="err-comment"></textarea>
             </label>
             <p id="err-comment" class="error-text field-error" hidden></p>
+            <p id="comment-suggestions" class="comment-suggestions small"></p>
             <div class="row">
               <button type="submit" id="entry-submit" class="btn primary">Speichern</button>
               <button type="button" id="entry-cancel" class="btn ghost" hidden>Abbrechen</button>
@@ -286,7 +287,7 @@
         <textarea name="description" rows="3" maxlength="1000"></textarea>
       </label>
       <p id="event-meta" class="muted small"></p>
-      <p><a id="event-google" class="google-link" href="#" target="_blank" rel="noopener" hidden>📅 In Google Kalender übernehmen</a></p>
+      <p><a id="event-google" class="google-link" href="#" target="_blank" rel="noopener" hidden>In Google Kalender übernehmen</a></p>
       <p id="event-error" class="error-text small" hidden></p>
       <div class="row">
         <button type="submit" class="btn primary">Speichern</button>
@@ -351,6 +352,16 @@
         <button type="submit" class="btn primary">Speichern</button>
         <button type="button" id="card-delete" class="btn danger">Löschen</button>
         <button type="button" id="card-cancel" class="btn ghost">Abbrechen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="confirm-dialog">
+    <form method="dialog">
+      <p id="confirm-text"></p>
+      <div class="row">
+        <button value="ok" id="confirm-ok" class="btn danger">Löschen</button>
+        <button value="cancel" class="btn ghost" autofocus>Abbrechen</button>
       </div>
     </form>
   </dialog>
