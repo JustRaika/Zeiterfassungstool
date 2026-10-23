@@ -6,6 +6,7 @@ import {
 
 const MAX_MINUTES = 24 * 60;
 const RECENT_COUNT = 15;
+const TAG_HISTORY = 30; // so viele eigene Einträge bestimmen die Tag-Reihenfolge
 const MIN_COMMENT = 3;
 const DRAFT_KEY = 'fourcast-entry-draft';
 
@@ -13,6 +14,7 @@ let ctx;
 let form;
 let editingId = null;
 let selectedTags = new Set();
+let tagOrder = []; // Tags, die eigenen häufigsten zuerst
 let ticker = null;
 
 export function init(c) {
@@ -56,8 +58,24 @@ export function show() {
   renderTimer();
   // Gestoppter Timer (z. B. nach dem Neuladen): Zeit wieder ins leere Formular übernehmen
   if (!editingId && !form.hours.value && !form.minutes.value) fillFromTimer();
+  sortTags();
   renderTagChips();
   renderMine();
+}
+
+// Eigene häufigste Tags (aus den letzten Einträgen) nach vorne, sonst Reihenfolge wie in der Datenbank.
+// Nur beim Öffnen des Tabs, damit die Chips nicht nach jedem Speichern springen.
+function sortTags() {
+  const counts = new Map();
+  for (const e of myEntries().slice(0, TAG_HISTORY)) {
+    for (const t of e.tags) counts.set(t, (counts.get(t) || 0) + 1);
+  }
+  // sort ist stabil: gleich oft genutzte Tags behalten ihre Reihenfolge
+  tagOrder = [...ctx.tags].sort((a, b) => (counts.get(b.name) || 0) - (counts.get(a.name) || 0));
+}
+
+function myEntries() {
+  return ctx.entries.filter((e) => e.member === ctx.me.github_username);
 }
 
 // Kommentar und Tags eines neuen Eintrags im Browser merken, damit sie das Neuladen überstehen
@@ -330,7 +348,7 @@ async function discardTimer() {
 // ---------------------------------------------------------------------
 function renderTagChips() {
   $('#tag-chips').innerHTML = toggleChips(
-    ctx.tags.map((t) => ({ value: t.name, label: t.name, color: t.color })), selectedTags, 'tag');
+    tagOrder.map((t) => ({ value: t.name, label: t.name, color: t.color })), selectedTags, 'tag');
 }
 
 // Fehlermeldungen stehen direkt unter dem jeweiligen Feld, alle auf einmal.
@@ -432,7 +450,7 @@ async function clearStoppedTimer() {
 // Eigene Einträge
 // ---------------------------------------------------------------------
 function renderMine() {
-  const mine = ctx.entries.filter((e) => e.member === ctx.me.github_username);
+  const mine = myEntries();
 
   const now = new Date();
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
@@ -453,6 +471,7 @@ function renderMine() {
       <span class="dur">${fmtDuration(e.duration_minutes)}</span>
       <span class="chips tags-cell">${tagChips(e.tags, ctx.tagMap)}</span>
       <span class="actions">
+        <button class="icon-btn" data-repeat="${e.id}" title="Tags und Kommentar ins Formular übernehmen">Nochmal</button>
         <button class="icon-btn" data-edit="${e.id}">Bearbeiten</button>
         <button class="icon-btn" data-delete="${e.id}">Löschen</button>
       </span>
@@ -461,10 +480,23 @@ function renderMine() {
     ${mine.length > RECENT_COUNT ? `<p class="muted small">Alle ${mine.length} Einträge siehst du in der Übersicht.</p>` : ''}`;
 }
 
+// Tags und Kommentar eines früheren Eintrags für einen neuen übernehmen (Datum und Dauer bleiben)
+function repeatEntry(entry) {
+  if (editingId) resetForm();
+  selectedTags = new Set(entry.tags);
+  form.comment.value = entry.comment || '';
+  renderTagChips();
+  saveDraft();
+  showErrors([]);
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  (form.hours.value || form.minutes.value ? $('#entry-submit') : form.hours).focus({ preventScroll: true });
+}
+
 async function onListClick(e) {
-  const editId = e.target.dataset.edit;
-  const deleteId = e.target.dataset.delete;
-  if (editId) {
+  const { repeat: repeatId, edit: editId, delete: deleteId } = e.target.dataset;
+  if (repeatId) {
+    repeatEntry(ctx.entries.find((x) => x.id === repeatId));
+  } else if (editId) {
     editEntry(ctx.entries.find((x) => x.id === editId));
   } else if (deleteId) {
     await deleteEntry(ctx, deleteId);

@@ -81,9 +81,9 @@
             <p id="timer-hint" class="muted small">Läuft nicht.</p>
             <div class="row">
               <button id="timer-start" class="btn primary">▶ Start</button>
-              <button id="timer-pause" class="btn primary" hidden>⏸ Pause</button>
-              <button id="timer-resume" class="btn primary" hidden>▶ Weiter</button>
-              <button id="timer-stop" class="btn stop" hidden>■ Stop &amp; eintragen</button>
+              <button id="timer-pause" class="btn" hidden>⏸ Pause</button>
+              <button id="timer-resume" class="btn" hidden>▶ Weiter</button>
+              <button id="timer-stop" class="btn primary" hidden>■ Stop &amp; eintragen</button>
               <button id="timer-discard" class="btn ghost" hidden>Verwerfen</button>
             </div>
             <ul id="timer-stamps" class="stamps"></ul>
@@ -141,10 +141,10 @@
         <div class="card filters">
           <label class="field">Zeitraum
             <select id="f-period">
-              <option value="month">Dieser Monat</option>
+              <option value="month" selected>Dieser Monat</option>
               <option value="lastmonth">Letzter Monat</option>
               <option value="year">Dieses Jahr</option>
-              <option value="all" selected>Alles</option>
+              <option value="all">Alles</option>
               <option value="custom">Eigener Zeitraum</option>
             </select>
           </label>
@@ -189,6 +189,7 @@
               <tbody id="entries-body"></tbody>
             </table>
           </div>
+          <button type="button" id="entries-more" class="btn ghost small entries-more" hidden></button>
         </div>
       </section>
 
@@ -225,7 +226,7 @@
         </div>
         <!-- "+ Task" steht auf breiten Bildschirmen links neben dem Board, sonst darüber -->
         <div class="tasks-main">
-          <button type="button" id="task-new" class="btn create">+ Task</button>
+          <button type="button" id="task-new" class="btn primary create">+ Task</button>
           <div id="board" class="kanban"></div>
           <form id="task-filters" class="card filters" hidden>
           <label class="field">Suche

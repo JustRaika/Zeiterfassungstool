@@ -150,7 +150,8 @@ input, select, textarea {
 }
 /* Einheitliche Höhe, damit Datums- und Auswahlfelder nebeneinander bündig sind */
 input:not([type="checkbox"]), select { height: 40px; }
-input:focus, select:focus, textarea:focus, .btn:focus-visible, .chip:focus-visible {
+input:focus, select:focus, textarea:focus, .btn:focus-visible, .chip:focus-visible,
+.kanban-card:focus-visible, .task-table tbody tr:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -173,7 +174,6 @@ textarea { resize: vertical; }
 .btn.primary { background: var(--accent); color: var(--accent-text); }
 .btn.ghost { background: transparent; border-color: var(--border); }
 .btn.danger { background: transparent; border-color: var(--danger); color: var(--danger); }
-.btn.stop, .btn.create { background: var(--danger); color: #1c1c23; }
 .btn.create { font-weight: 600; padding: 8px 20px; }
 .btn.small { padding: 4px 10px; font-size: 0.85rem; }
 .icon-btn {
@@ -268,6 +268,7 @@ table.entries .num { text-align: right; white-space: nowrap; font-variant-numeri
 table.entries .chips { gap: 4px; }
 table.entries td.comment { color: var(--muted); min-width: 160px; }
 table.entries td.actions { white-space: nowrap; text-align: right; }
+.entries-more { margin-top: 12px; }
 
 /* ---------- Timer: Pause und Stempelungen ---------- */
 .timer-card.paused .timer-display { color: var(--muted); }
@@ -285,10 +286,6 @@ table.entries td.actions { white-space: nowrap; text-align: right; }
 .stamps li span { color: var(--muted); white-space: nowrap; }
 .stamps .stamp-pause { color: #f5df8a; padding-left: 12px; }
 .stamps .stamp-total { color: var(--muted); font-weight: 600; }
-.stamps .stamp-stop { color: var(--danger); }
-
-/* Gestoppt: Zeit wurde ins Formular übernommen, wartet aufs Speichern */
-.timer-card.stopped .timer-display { color: var(--danger); }
 .timer-note {
   margin: -4px 0 14px;
   padding: 6px 10px;
@@ -583,7 +580,9 @@ dialog input.title-input::placeholder { color: var(--muted); }
   .entry-list li { grid-template-columns: auto 1fr auto; }
   .entry-list .tags-cell { grid-column: 1 / -1; grid-row: 2; }
   .entry-list .comment { grid-column: 1 / -1; grid-row: 3; }
-  .entry-list .actions { grid-column: 3; grid-row: 1; }
+  /* Drei Knöpfe passen nicht mehr neben Datum und Dauer: eigene Zeile darunter */
+  /* -6px gleicht das Innen-Padding der .icon-btn aus, damit der Text bündig mit dem Datum steht */
+  .entry-list .actions { grid-column: 1 / -1; grid-row: 4; margin-left: -6px; }
   #user-name { display: none; }
   #calendar .fc-toolbar { flex-wrap: wrap; gap: 8px; }
   #calendar .fc-toolbar-title { font-size: 1rem; }

@@ -57,14 +57,16 @@ export function init(c) {
   ctx = c;
   const board = $('#board');
   board.addEventListener('click', onBoardClick);
+  board.addEventListener('keydown', (e) => openOnKey(e, '.kanban-card'));
   board.addEventListener('dragstart', onDragStart);
   board.addEventListener('dragend', onDragEnd);
   board.addEventListener('dragover', onDragOver);
   board.addEventListener('drop', onDrop);
   $('#task-list').addEventListener('click', (e) => {
     const row = e.target.closest('[data-id]');
-    if (row) openDialog(cards.find((c) => c.id === row.dataset.id));
+    if (row) openCard(row);
   });
+  $('#task-list').addEventListener('keydown', (e) => openOnKey(e, 'tr[data-id]'));
   $('#tasks-view-toggle').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-view]');
     if (btn) setView(btn.dataset.view);
@@ -208,7 +210,7 @@ function renderBoard() {
 }
 
 function cardHtml(c) {
-  return `<article class="kanban-card" draggable="true" data-id="${esc(c.id)}"
+  return `<article class="kanban-card" draggable="true" tabindex="0" role="button" data-id="${esc(c.id)}"
       style="--c:${CATEGORIES[c.category]?.color || 'var(--border)'}">
     <div class="kanban-badges">
       <span class="prio prio-${c.priority}">${PRIORITIES[c.priority] || ''}</span>
@@ -227,9 +229,21 @@ function cardHtml(c) {
 // Karte anklicken = bearbeiten, freie Stelle in einer Zelle = neuer Task genau dort
 function onBoardClick(e) {
   const card = e.target.closest('.kanban-card');
-  if (card) { openDialog(cards.find((c) => c.id === card.dataset.id)); return; }
+  if (card) { openCard(card); return; }
   const cell = e.target.closest('.kanban-list');
   if (cell) openDialog(null, cell.dataset.status, cell.dataset.category);
+}
+
+// Element mit data-id (Karte oder Listenzeile) im Dialog öffnen
+function openCard(el) {
+  openDialog(cards.find((c) => c.id === el.dataset.id));
+}
+
+// Tastatur: fokussierte Karte (Board) oder Zeile (Liste) mit Enter oder Leertaste öffnen
+function openOnKey(e, selector) {
+  if ((e.key !== 'Enter' && e.key !== ' ') || !e.target.matches(selector)) return;
+  e.preventDefault();
+  openCard(e.target);
 }
 
 // ---------------------------------------------------------------------
@@ -283,7 +297,7 @@ function renderList() {
   $('#task-list').innerHTML = `<div class="table-wrap"><table class="entries task-table">
     <thead><tr><th>Aufgabe</th><th>Spalte</th><th>Prio</th><th>Zuständig</th><th>Fällig</th><th>Unteraufgaben</th></tr></thead>
     <tbody>${sorted.map((c) => `
-      <tr data-id="${esc(c.id)}" class="${c.status === 'done' ? 'done' : ''}"
+      <tr data-id="${esc(c.id)}" tabindex="0" class="${c.status === 'done' ? 'done' : ''}"
           style="--c:${CATEGORIES[c.category]?.color || 'var(--border)'}">
         <td class="task-title">${esc(c.title)}</td>
         <td class="nowrap">${statusLabel[c.status]}</td>

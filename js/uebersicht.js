@@ -3,13 +3,25 @@
 import { $, esc, fmtDate, fmtDuration, fmtHours, fmtPercent, isoDate, personLabel, sumMinutes, tagChips } from './util.js';
 import { deleteEntry } from './erfassen.js';
 
+// Die Tabelle zeigt zuerst nur die neuesten Einträge; „Alle anzeigen“ blendet den Rest ein,
+// bis ein Filter geändert wird.
+const TABLE_LIMIT = 50;
+
 let ctx;
+let showAll = false;
 
 export function init(c) {
   ctx = c;
   for (const id of ['#f-period', '#f-from', '#f-to', '#f-person', '#f-tag']) {
-    $(id).addEventListener('change', render);
+    $(id).addEventListener('change', () => {
+      showAll = false;
+      render();
+    });
   }
+  $('#entries-more').addEventListener('click', () => {
+    showAll = true;
+    render();
+  });
   $('#csv-btn').addEventListener('click', exportCsv);
   $('#entries-body').addEventListener('click', async (e) => {
     const { edit, delete: del } = e.target.dataset;
@@ -113,11 +125,15 @@ function renderTagSums(list) {
 
 function renderTable(list) {
   $('#list-total').textContent = `${list.length} Einträge · ${fmtHours(sumMinutes(list))}`;
+  const shown = showAll ? list : list.slice(0, TABLE_LIMIT);
+  const more = $('#entries-more');
+  more.hidden = shown.length === list.length;
+  more.textContent = `Alle ${list.length} Einträge anzeigen`;
   if (!list.length) {
     $('#entries-body').innerHTML = '<tr><td colspan="6" class="empty">Keine Einträge.</td></tr>';
     return;
   }
-  $('#entries-body').innerHTML = list.map((e) => {
+  $('#entries-body').innerHTML = shown.map((e) => {
     const own = ctx.canEdit(e);
     return `<tr>
       <td class="date">${fmtDate(e.date)}</td>
