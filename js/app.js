@@ -61,7 +61,7 @@ const ctx = {
   // Eintrag im Erfassen-Tab bearbeiten (wird aus der Übersicht aufgerufen)
   editEntry(entry) {
     location.hash = '#erfassen';
-    erfassen.editEntry(entry);
+    erfassen.editEntry(entry, 'uebersicht');
   },
 };
 
@@ -127,8 +127,8 @@ function setupHeader() {
   }
 }
 
-// Klick neben einen Dialog schliesst ihn wie "Abbrechen".
-// Nur wenn auch der Mausklick daneben begann (Text markieren und daneben loslassen schliesst nicht).
+// Klick neben einen Dialog schliesst ihn wie "Abbrechen" (über ein "cancel", das guardDialog abfangen
+// kann). Nur wenn auch der Mausklick daneben begann (Text markieren und daneben loslassen schliesst nicht).
 function setupDialogs() {
   for (const dialog of document.querySelectorAll('dialog')) {
     const outside = (e) => {
@@ -139,7 +139,7 @@ function setupDialogs() {
     let downOutside = false;
     dialog.addEventListener('mousedown', (e) => { downOutside = outside(e); });
     dialog.addEventListener('click', (e) => {
-      if (downOutside && outside(e)) dialog.close();
+      if (downOutside && outside(e) && dialog.dispatchEvent(new Event('cancel', { cancelable: true }))) dialog.close();
       downOutside = false;
     });
   }

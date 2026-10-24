@@ -39,6 +39,13 @@ input:not([type="checkbox"]), textarea { cursor: text; }
 
 [hidden] { display: none !important; }
 
+/* Browser-Flächen in den Farben der Werkstatt statt Browser-Standard */
+:root { accent-color: var(--accent); scrollbar-color: var(--border) var(--bg); }
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); }
+input, textarea { caret-color: var(--accent); }
+/* 85 % Staub auf Werkbank: noch 4,8:1, aber klar leiser als echte Eingaben */
+::placeholder { color: color-mix(in srgb, var(--muted) 85%, var(--surface)); opacity: 1; }
+
 /* Unbounded nur für Titel und das Wort „Fourcast“, der Rest bleibt in der Systemschrift */
 h1, h2 { margin: 0 0 12px; line-height: 1.25; font-family: var(--font-display); font-weight: 500; }
 h2 { font-size: 0.95rem; letter-spacing: -0.01em; }
@@ -60,8 +67,8 @@ code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-
 
 .brand { font-family: var(--font-text); font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 /* Schriftzug: „Fourcast“ in Unbounded, „Zeiterfassung“ in der Systemschrift, beides hell */
-.brand span { font-weight: 400; color: #e4e4ec; }
-.brand .wordmark { font-family: var(--font-wordmark); font-weight: 600; letter-spacing: -0.02em; color: #f6f6fa; }
+.brand span { font-weight: 400; color: var(--text); }
+.brand .wordmark { font-family: var(--font-wordmark); font-weight: 600; letter-spacing: -0.02em; color: #ffffff; }
 .logo { width: 32px; height: 32px; }
 .login-logo { width: 96px; height: 96px; display: block; margin: 0 auto 12px; }
 
@@ -153,7 +160,8 @@ input, select, textarea {
 /* Einheitliche Höhe, damit Datums- und Auswahlfelder nebeneinander bündig sind */
 input:not([type="checkbox"]), select { height: 40px; }
 input:focus, select:focus, textarea:focus, .btn:focus-visible, .chip:focus-visible,
-.kanban-card:focus-visible, .task-table tbody tr:focus-visible, .link-btn:focus-visible {
+.kanban-card:focus-visible, .task-table tbody tr:focus-visible, .link-btn:focus-visible,
+.tabs a:focus-visible, .icon-btn:focus-visible, .segmented button:focus-visible, .google-link:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -170,8 +178,12 @@ textarea { resize: vertical; }
   background: var(--surface-2);
   color: var(--text);
   white-space: nowrap;
+  transition: background-color 0.15s ease-out, filter 0.15s ease-out;
 }
-.btn:hover { filter: brightness(0.96); }
+/* Auf dunklem Grund heller werden (abdunkeln sähe man nicht); umrandete Knöpfe bekommen eine Fläche */
+.btn:hover:not(:disabled) { filter: brightness(1.12); }
+.btn.ghost:hover:not(:disabled) { filter: none; background: var(--surface-2); }
+.btn.danger:hover:not(:disabled) { filter: none; background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .btn:disabled { opacity: 0.5; }
 .btn.primary { background: var(--accent); color: var(--accent-text); }
 .btn.ghost { background: transparent; border-color: var(--border); }
@@ -183,7 +195,7 @@ textarea { resize: vertical; }
   background: transparent;
   color: var(--muted);
   padding: 4px 6px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.85rem;
 }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
@@ -204,6 +216,7 @@ textarea { resize: vertical; }
 }
 button.chip[aria-pressed="false"] { background: transparent; border-color: var(--border); color: var(--muted); }
 button.chip[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 28%, transparent); border-color: var(--c); }
+button.chip[aria-pressed="false"]:hover, label.chip:not(:has(input:checked)):hover { border-color: var(--muted); color: var(--text); }
 /* Einfachauswahl als Chips (Radio-Buttons, z. B. Spalte, Kategorie, Priorität) */
 label.chip { background: transparent; border-color: var(--border); color: var(--muted); font-size: 0.8rem; }
 label.chip input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
@@ -378,7 +391,7 @@ input.flash { animation: flash 1.6s ease-out; }
 
 /* ---------- Admin ---------- */
 .badge {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
@@ -437,6 +450,8 @@ kbd {
 @media (hover: none) {
   .key-hint, .hint-mouse { display: none; }
   .hint-touch { display: inline; }
+  /* Auf Touch-Geräten grössere Ziele für die kleinen Text-Knöpfe (Bearbeiten, Löschen) */
+  .icon-btn { padding: 8px 10px; }
 }
 
 /* ---------- Kanban-Board ---------- */
@@ -491,7 +506,7 @@ kbd {
 .kanban-card.dragging { opacity: 0.35; }
 .kanban-card.drop-before { box-shadow: 0 -3px 0 var(--accent); }
 .kanban-list.drop-end { box-shadow: inset 0 -3px 0 var(--accent); }
-.kanban-badges { display: flex; gap: 6px; align-items: center; font-size: 0.72rem; font-weight: 600; }
+.kanban-badges { display: flex; gap: 6px; align-items: center; font-size: 0.75rem; font-weight: 600; }
 .prio { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); white-space: nowrap; }
 .prio-1 { background: var(--text); border-color: var(--text); color: #1c1c23; }
 .prio-2 { border-color: var(--text); color: var(--text); }
@@ -522,6 +537,7 @@ kbd {
   color: var(--muted);
 }
 .segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+.segmented button[aria-pressed="false"]:hover { color: var(--text); background: var(--surface-2); }
 .task-table tbody tr:hover { background: var(--surface-2); }
 .task-table .task-title { font-weight: 600; min-width: 200px; }
 .task-table tr.done .task-title { color: var(--muted); text-decoration: line-through; }
@@ -551,7 +567,7 @@ dialog { max-height: calc(100vh - 32px); overflow-y: auto; }
 }
 .image-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .image-thumb a { display: block; width: 100%; height: 100%; }
-.image-thumb .icon-btn { position: absolute; top: 4px; right: 4px; background: rgb(0 0 0 / 0.6); color: #fff; padding: 2px 6px; }
+.image-thumb .icon-btn { position: absolute; top: 4px; right: 4px; background: rgb(0 0 0 / 0.6); color: #ffffff; padding: 2px 6px; }
 
 /* ---------- Kalender (FullCalendar) ---------- */
 #calendar {
@@ -571,7 +587,7 @@ dialog { max-height: calc(100vh - 32px); overflow-y: auto; }
   font-size: 0.9rem;
 }
 #calendar .fc-button-active { color: var(--accent-text); }
-#calendar .fc-toolbar-title { font-size: 1.1rem; font-family: var(--font-text); font-weight: 600; }
+#calendar .fc-toolbar-title { font-size: 1.2rem; font-family: var(--font-text); font-weight: 600; }
 #calendar a { color: inherit; text-decoration: none; }
 
 /* ---------- Dialog ---------- */
@@ -584,6 +600,16 @@ dialog {
   width: min(460px, calc(100vw - 32px));
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.4); }
+/* Speichern/Löschen/Abbrechen bleiben beim Scrollen langer Dialoge unten sichtbar
+   (-20px gleicht das Innen-Padding des Dialogs aus, damit die Leiste bündig am Rand sitzt) */
+.dialog-actions {
+  position: sticky;
+  bottom: -20px;
+  margin: 0 -20px -20px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
 .confirm-dialog { width: min(380px, calc(100vw - 32px)); }
 .confirm-dialog p { margin: 0 0 16px; }
 
@@ -637,7 +663,7 @@ dialog input.title-input::placeholder { color: var(--muted); }
   --mascot-size: 24px;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
-#toast.error { background: var(--danger); color: #fff; }
+#toast.error { background: var(--danger); color: #ffffff; }
 
 /* ---------- Mobil ---------- */
 @media (max-width: 1000px) {
@@ -669,5 +695,5 @@ dialog input.title-input::placeholder { color: var(--muted); }
   .entry-list .actions { grid-column: 3; grid-row: 1; }
   #user-name { display: none; }
   #calendar .fc-toolbar { flex-wrap: wrap; gap: 8px; }
-  #calendar .fc-toolbar-title { font-size: 1rem; }
+  #calendar .fc-toolbar-title { font-size: 0.95rem; }
 }

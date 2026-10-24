@@ -14,6 +14,7 @@ const DRAFT_KEY = 'fourcast-entry-draft';
 let ctx;
 let form;
 let editingId = null;
+let returnTab = null; // Tab, aus dem "Bearbeiten" kam (Übersicht): nach Speichern oder Abbrechen zurück dorthin
 let selectedTags = new Set();
 let tagOrder = []; // Tags, die eigenen häufigsten zuerst
 let ticker = null;
@@ -36,7 +37,7 @@ export function init(c) {
     const errorId = e.target.getAttribute('aria-describedby');
     if (errorId?.startsWith('err-')) setError(errorId.slice(4));
   });
-  $('#entry-cancel').addEventListener('click', resetForm);
+  $('#entry-cancel').addEventListener('click', () => goBack(resetForm()));
   $('#tag-chips').addEventListener('click', (e) => {
     if (!toggleChip(e, selectedTags, 'tag')) return;
     saveDraft();
@@ -108,8 +109,10 @@ function clearDraft() {
   try { localStorage.removeItem(DRAFT_KEY); } catch { /* egal */ }
 }
 
-export function editEntry(entry) {
+// from: Tab, in den es nach dem Bearbeiten zurückgeht (z. B. 'uebersicht'), sonst hier bleiben
+export function editEntry(entry, from = null) {
   editingId = entry.id;
+  returnTab = from;
   form.date.value = entry.date;
   form.hours.value = Math.floor(entry.duration_minutes / 60);
   form.minutes.value = entry.duration_minutes % 60;
@@ -126,9 +129,18 @@ export function editEntry(entry) {
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// Nach dem Bearbeiten in den Tab zurück, aus dem man kam (falls es einer war)
+function goBack(tab) {
+  if (tab) location.hash = `#${tab}`;
+}
+
 // Zurück zu "neuer Eintrag": angefangener Entwurf und gestoppter Timer kommen wieder ins Formular.
 // fillTimer: false, wenn der Timer gerade schon verbraucht wurde (Eintrag gespeichert).
+// Gibt den Tab zurück, aus dem das Bearbeiten kam; er gilt damit als erledigt, egal wie das Bearbeiten
+// endet (Abbrechen, Speichern, Timer stoppen, Eintrag löschen).
 function resetForm({ fillTimer = true } = {}) {
+  const tab = returnTab;
+  returnTab = null;
   editingId = null;
   form.reset();
   form.date.value = isoDate();
@@ -142,6 +154,7 @@ function resetForm({ fillTimer = true } = {}) {
   $('#comment-suggestions').hidden = false;
   showErrors([]);
   if (fillTimer) fillFromTimer();
+  return tab;
 }
 
 // ---------------------------------------------------------------------
@@ -418,11 +431,12 @@ async function saveEntry(e) {
 
   const btn = $('#entry-submit');
   btn.disabled = true;
+  let backTo = null;
   try {
     if (editingId) {
       await ctx.db.updateEntry(editingId, payload);
       toast('Eintrag geändert.');
-      resetForm();
+      backTo = resetForm();
     } else {
       await ctx.db.addEntry(payload);
       // Ab hier ist der Eintrag gespeichert: Formular auf jeden Fall leeren, sonst droht ein doppelter Eintrag
@@ -441,6 +455,7 @@ async function saveEntry(e) {
     }
     await ctx.reloadEntries();
     renderMine();
+    goBack(backTo); // erst nach dem Neuladen, damit die Übersicht die Änderung schon zeigt
   } catch (err) {
     ctx.fail(err);
   } finally {

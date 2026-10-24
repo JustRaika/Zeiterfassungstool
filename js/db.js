@@ -5,7 +5,12 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { isoDate } from './util.js';
 
-const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/+esm';
+// Supabase-Bibliothek als klassisches Skript mit Prüfsumme (integrity): Der Browser führt sie nur aus,
+// wenn sie exakt dieser Version entspricht. Bei einem Versionswechsel den Hash neu berechnen.
+const SUPABASE_JS = {
+  src: 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js',
+  integrity: 'sha384-CLZeq1dk8+Uzrs7TVvBUdlFoV5F0DMqgRoeHa8g5wJcuPe5SkVfEvdxB0ZuzlnBQ',
+};
 const PAGE_SIZE = 1000; // Supabase liefert max. 1000 Zeilen pro Abfrage
 const IMAGE_BUCKET = 'task-images';
 // Bild-Links gelten einen Tag (werden bei jedem Öffnen eines Tasks neu erstellt;
@@ -14,10 +19,22 @@ const IMAGE_LINK_SECONDS = 24 * 60 * 60;
 
 export async function createDb() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-    const { createClient } = await import(SUPABASE_JS);
-    return new SupabaseDb(createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+    await loadScript(SUPABASE_JS);
+    return new SupabaseDb(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
   }
   return new DemoDb();
+}
+
+function loadScript({ src, integrity }) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.integrity = integrity;
+    script.crossOrigin = 'anonymous';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Die Supabase-Bibliothek konnte nicht geladen werden (Netz oder Prüfsumme).'));
+    document.head.append(script);
+  });
 }
 
 function check({ data, error }) {

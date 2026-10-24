@@ -18,6 +18,19 @@ create table if not exists public.members (
 alter table public.members add column if not exists timer_segments jsonb;
 -- Admins dürfen alle Zeiteinträge bearbeiten und löschen.
 alter table public.members add column if not exists is_admin boolean not null default false;
+-- Unveränderliche GitHub-Konto-ID. Der Login wird darüber zugeordnet, nicht über den Usernamen:
+-- GitHub-Usernamen lassen sich umbenennen und werden danach wieder frei, die ID nie.
+-- Neue Mitglieder brauchen diese ID (https://api.github.com/users/<username> → "id").
+alter table public.members add column if not exists github_id text unique;
+-- Farbe und Anzeigename landen bei allen anderen in der Oberfläche: nur echte Hex-Farben,
+-- Namen ohne Rand-Leerzeichen, 1–40 Zeichen und (ohne Gross/Klein) eindeutig, damit sich niemand
+-- als jemand anderes ausgeben kann.
+alter table public.members drop constraint if exists members_color_hex;
+alter table public.members add constraint members_color_hex check (color ~ '^#[0-9a-fA-F]{6}$');
+alter table public.members drop constraint if exists members_display_name_ok;
+alter table public.members add constraint members_display_name_ok
+  check (display_name = btrim(display_name) and char_length(display_name) between 1 and 40);
+create unique index if not exists members_display_name_unique on public.members (lower(display_name));
 
 -- Tags (Kategorien) für Zeiteinträge.
 create table if not exists public.tags (
@@ -25,6 +38,8 @@ create table if not exists public.tags (
   color      text not null default '#6b7280',
   created_at timestamptz not null default now()
 );
+alter table public.tags drop constraint if exists tags_color_hex;
+alter table public.tags add constraint tags_color_hex check (color ~ '^#[0-9a-fA-F]{6}$');
 
 -- Die eigentliche Zeiterfassung.
 create table if not exists public.time_entries (
@@ -87,9 +102,9 @@ end $$;
 
 -- ---------------------------------------------------------------------
 -- Wer ist gerade eingeloggt?
--- Liest den GitHub-Usernamen aus auth.identities (kommt direkt von GitHub
--- und kann vom User nicht selbst geändert werden). Gibt null zurück, wenn
--- der Account nicht in members steht.
+-- Ordnet den Login über die GitHub-Konto-ID zu (auth.identities.provider_id, kommt direkt von
+-- GitHub und ändert sich nie, auch nicht beim Umbenennen). Gibt null zurück, wenn das Konto
+-- nicht in members steht.
 -- ---------------------------------------------------------------------
 create or replace function public.current_member()
 returns text
@@ -100,9 +115,7 @@ set search_path = public, auth
 as $$
   select m.github_username
   from public.members m
-  join auth.identities i
-    on lower(coalesce(i.identity_data ->> 'user_name', i.identity_data ->> 'preferred_username'))
-     = lower(m.github_username)
+  join auth.identities i on i.provider_id = m.github_id
   where i.user_id = auth.uid()
     and i.provider = 'github'
   limit 1
@@ -247,6 +260,17 @@ insert into public.members (github_username, display_name, color) values
   ('Rico-Uttinger',      'Rico',   '#ffb88c')   -- pastellorange
 on conflict (github_username) do update
   set display_name = excluded.display_name, color = excluded.color;
+
+-- GitHub-Konto-IDs (unveränderlich, für den Login; Quelle: https://api.github.com/users/<username>)
+update public.members m set github_id = v.id
+from (values
+  ('JustRaika',          '145673445'),
+  ('JanSchwegler',       '88095095'),
+  ('CelestialInsomniac', '145690070'),
+  ('mf-doodoo',          '146451421'),
+  ('Rico-Uttinger',      '32189012')
+) as v (username, id)
+where m.github_username = v.username;
 
 -- ADMIN: darf alle Zeiteinträge bearbeiten und löschen.
 update public.members set is_admin = (github_username = 'JustRaika');

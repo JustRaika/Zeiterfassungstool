@@ -1,6 +1,6 @@
 // Tab "Kalender": gemeinsame Termine mit FullCalendar (global per <script> geladen).
 
-import { $, confirmDialog, esc, fmtDate, hhmm, isoDate, toast } from './util.js';
+import { $, confirmDialog, esc, fmtDate, formState, guardDialog, hhmm, isoDate, toast } from './util.js';
 
 const HOUR_MS = 60 * 60 * 1000;
 const UPCOMING_COUNT = 5;
@@ -16,6 +16,7 @@ function addDays(date, days) {
 let ctx;
 let calendar = null;
 let editing = null; // Datenbank-Zeile des geöffneten Termins, null = neu
+let eventGuard; // fragt vor dem Verwerfen ungespeicherter Änderungen nach
 
 export function init(c) {
   ctx = c;
@@ -25,7 +26,7 @@ export function init(c) {
   form.start_date.addEventListener('change', () => {
     if (!form.end_date.value || form.end_date.value < form.start_date.value) form.end_date.value = form.start_date.value;
   });
-  $('#event-cancel').addEventListener('click', () => $('#event-dialog').close());
+  eventGuard = guardDialog($('#event-dialog'), $('#event-cancel'), () => formState(form));
   $('#event-delete').addEventListener('click', deleteEvent);
   $('#event-new').addEventListener('click', () => {
     const start = new Date();
@@ -113,6 +114,11 @@ function createCalendar() {
       ? { left: 'prev,next', center: 'title', right: 'dayGridMonth,listMonth' }
       : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listMonth' },
     buttonText: { today: 'Heute', month: 'Monat', week: 'Woche', list: 'Liste' },
+    // Eigene Hinweise für Screenreader/Tooltips; die deutsche Vorlage machte aus "Liste" "Listeesansicht"
+    buttonHints: {
+      prev: 'Zurück', next: 'Weiter', today: 'Heute',
+      month: 'Monatsansicht', week: 'Wochenansicht', list: 'Listenansicht',
+    },
     noEventsText: 'Keine Termine',
     nowIndicator: true,
     selectable: true,
@@ -244,6 +250,7 @@ function openDialog(row, defaults = {}) {
   $('#event-google').hidden = !row;
   if (row) $('#event-google').href = googleCalendarUrl(row);
 
+  eventGuard.markClean();
   $('#event-dialog').showModal();
   form.title.focus();
 }

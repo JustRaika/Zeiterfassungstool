@@ -95,16 +95,48 @@ export function icon(name) {
 }
 
 // Eigener Bestätigungsdialog statt confirm(). true, wenn bestätigt; Esc, Abbrechen oder
-// ein Klick daneben ergeben false.
+// ein Klick daneben ergeben false. Ist er schon offen (z. B. Doppelklick), gilt die laufende Frage.
+let pendingConfirm = null;
 export function confirmDialog(message, okLabel = 'Löschen') {
+  if (pendingConfirm) return pendingConfirm;
   const dialog = $('#confirm-dialog');
   $('#confirm-text').textContent = message;
   $('#confirm-ok').textContent = okLabel;
   dialog.returnValue = '';
   dialog.showModal();
-  return new Promise((resolve) => {
-    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'ok'), { once: true });
+  pendingConfirm = new Promise((resolve) => {
+    dialog.addEventListener('close', () => {
+      pendingConfirm = null;
+      resolve(dialog.returnValue === 'ok');
+    }, { once: true });
   });
+  return pendingConfirm;
+}
+
+// Dialog mit Formular: Esc, "Abbrechen" und ein Klick daneben (setupDialogs in app.js schickt dafür
+// ein "cancel") fragen nach, wenn sich seit markClean() etwas geändert hat. state() liefert einen
+// vergleichbaren String des Formularzustands; busy() true heisst: gerade nicht schliessen (Speichern läuft).
+export function guardDialog(dialog, cancelButton, state, busy = () => false) {
+  let clean = '';
+  const requestClose = async () => {
+    if (busy()) return;
+    if (state() !== clean && !await confirmDialog('Ungespeicherte Änderungen verwerfen?', 'Verwerfen')) return;
+    if (!busy()) dialog.close();
+  };
+  dialog.addEventListener('cancel', (e) => {
+    // Chrome lässt ein cancel ohne neue Nutzeraktion nicht noch einmal verhindern und schliesst
+    // dann ohnehin; in dem Fall nicht nachfragen, sonst bliebe eine Frage zu einem zu Dialog offen.
+    if (!e.cancelable) return;
+    e.preventDefault();
+    requestClose();
+  });
+  cancelButton.addEventListener('click', requestClose);
+  return { markClean: () => { clean = state(); } };
+}
+
+// Formularfelder als vergleichbarer String (für guardDialog)
+export function formState(form, ...extra) {
+  return JSON.stringify([[...new FormData(form)], ...extra]);
 }
 
 let toastTimer;

@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T12:43:38.227Z",
+  "title": "Design System: Fourcast Zeiterfassung",
+  "extensions": {
+    "colorMeta": {
+      "polarlicht-blau": {
+        "role": "primary",
+        "displayName": "Polarlicht-Blau",
+        "canonical": "#8ec5ff",
+        "tonalRamp": [
+          "#0d2540",
+          "#163b66",
+          "#21538f",
+          "#3a72bd",
+          "#5b8def",
+          "#8ec5ff",
+          "#c2e0ff",
+          "#e8f3ff"
+        ]
+      },
+      "pausengelb": {
+        "role": "secondary",
+        "displayName": "Pausengelb",
+        "canonical": "#f5df8a",
+        "tonalRamp": [
+          "#3a3010",
+          "#5c4d1a",
+          "#84702a",
+          "#ad9640",
+          "#d4bb5e",
+          "#f5df8a",
+          "#faecb8",
+          "#fdf7e2"
+        ]
+      },
+      "signalrot": {
+        "role": "tertiary",
+        "displayName": "Signalrot",
+        "canonical": "#f06a7e",
+        "tonalRamp": [
+          "#3d0f17",
+          "#661a28",
+          "#922a3d",
+          "#be3d55",
+          "#e0546b",
+          "#f06a7e",
+          "#f7a5b1",
+          "#fde3e7"
+        ]
+      },
+      "nachtgrund": {
+        "role": "neutral",
+        "displayName": "Nachtgrund",
+        "canonical": "#131318",
+        "tonalRamp": [
+          "#131318",
+          "#1c1c23",
+          "#26262f",
+          "#33333e",
+          "#4a4a58",
+          "#9a9aa7",
+          "#d6d6de",
+          "#ececf1"
+        ]
+      },
+      "werkbank": {
+        "role": "neutral",
+        "displayName": "Werkbank",
+        "canonical": "#1c1c23",
+        "tonalRamp": [
+          "#131318",
+          "#1c1c23",
+          "#26262f",
+          "#33333e",
+          "#4a4a58",
+          "#9a9aa7",
+          "#d6d6de",
+          "#ececf1"
+        ]
+      },
+      "ablage": {
+        "role": "neutral",
+        "displayName": "Ablage",
+        "canonical": "#26262f",
+        "tonalRamp": [
+          "#131318",
+          "#1c1c23",
+          "#26262f",
+          "#33333e",
+          "#4a4a58",
+          "#9a9aa7",
+          "#d6d6de",
+          "#ececf1"
+        ]
+      },
+      "naht": {
+        "role": "neutral",
+        "displayName": "Naht",
+        "canonical": "#33333e",
+        "tonalRamp": [
+          "#131318",
+          "#1c1c23",
+          "#26262f",
+          "#33333e",
+          "#4a4a58",
+          "#9a9aa7",
+          "#d6d6de",
+          "#ececf1"
+        ]
+      },
+      "kreide": {
+        "role": "neutral",
+        "displayName": "Kreide",
+        "canonical": "#ececf1",
+        "tonalRamp": [
+          "#131318",
+          "#1c1c23",
+          "#26262f",
+          "#33333e",
+          "#4a4a58",
+          "#9a9aa7",
+          "#d6d6de",
+          "#ececf1"
+        ]
+      },
+      "staub": {
+        "role": "neutral",
+        "displayName": "Staub",
+        "canonical": "#9a9aa7",
+        "tonalRamp": [
+          "#131318",
+          "#1c1c23",
+          "#26262f",
+          "#33333e",
+          "#4a4a58",
+          "#9a9aa7",
+          "#d6d6de",
+          "#ececf1"
+        ]
+      },
+      "schnee": {
+        "role": "neutral",
+        "displayName": "Schnee",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#131318",
+          "#1c1c23",
+          "#26262f",
+          "#33333e",
+          "#4a4a58",
+          "#9a9aa7",
+          "#ececf1",
+          "#ffffff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "wordmark": {
+        "displayName": "Wortmarke",
+        "purpose": "Nur das Wort „Fourcast“ in Kopfzeile und Login."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Login-Titel."
+      },
+      "title": {
+        "displayName": "Titel",
+        "purpose": "Kartentitel, Spaltenköpfe, Swimlane-Namen, Dialog-Titel."
+      },
+      "timer": {
+        "displayName": "Timer",
+        "purpose": "Die laufende Zeit, tabellarische Ziffern."
+      },
+      "body": {
+        "displayName": "Text",
+        "purpose": "Alle Fliesstexte und Tabellen."
+      },
+      "label": {
+        "displayName": "Beschriftung",
+        "purpose": "Feldbeschriftungen, Legenden, Statistiken in Staub."
+      },
+      "chip": {
+        "displayName": "Chip",
+        "purpose": "Tags, Filter-Chips, Prioritäten."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Dialog-Titel (Unbounded) und Monatstitel im Kalender (Systemschrift 600)."
+      },
+      "body-sm": {
+        "displayName": "Text klein",
+        "purpose": "Tabellen, Balkenzeilen, Termin-Liste, Meldungen, Kalender."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Prioritäten, Kanban- und Admin-Abzeichen, Tasten-Hinweise."
+      }
+    },
+    "shadows": [
+      {
+        "name": "einfuegemarke",
+        "value": "0 -3px 0 var(--accent)",
+        "purpose": "Einfügemarke beim Ziehen einer Kanban-Karte (Funktion, keine Erhöhung)."
+      },
+      {
+        "name": "meilenstein-leuchten",
+        "value": "0 0 10px rgb(196 167 245 / 0.45)",
+        "purpose": "Leuchten der Meilensteine im Kalender, sonst nirgends."
+      }
+    ],
+    "motion": [
+      {
+        "name": "maskottchen-schaukeln",
+        "value": "mascot-sway 2.8s ease-in-out infinite (±7°, translateX ±2px)",
+        "purpose": "Maskottchen in der Timer-Karte, solange der Timer läuft."
+      },
+      {
+        "name": "blau-verlauf",
+        "value": "blue-flow 6s linear infinite (transform: translateX(-50%))",
+        "purpose": "Fliessende 3px-Linie unter der laufenden Zeit."
+      },
+      {
+        "name": "feld-aufleuchten",
+        "value": "flash 1.6s ease-out",
+        "purpose": "Datum und Dauer leuchten kurz auf, wenn der gestoppte Timer sie ins Formular übernimmt."
+      },
+      {
+        "name": "meldung",
+        "value": "opacity 0.2s, transform 0.2s",
+        "purpose": "Ein- und Ausblenden der Meldung unten."
+      },
+      {
+        "name": "maskottchen-erwachen",
+        "value": "opacity 0.4s ease-out, filter 0.4s ease-out",
+        "purpose": "Übergang des Maskottchens von blass zu wach."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "handy",
+        "value": "640px"
+      },
+      {
+        "name": "einspaltig",
+        "value": "800px"
+      },
+      {
+        "name": "kompakt",
+        "value": "1000px"
+      },
+      {
+        "name": "weit",
+        "value": "1360px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Hauptknopf",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Die eine Hauptaktion eines Bereichs (Speichern, Start, Stop & eintragen).",
+      "html": "<button class=\"ds-btn-primary\">Speichern</button>",
+      "css": ".ds-btn-primary { font: 500 15px/1.5 system-ui, sans-serif; background: var(--accent, #8ec5ff); color: var(--accent-text, #131318); border: 1px solid transparent; border-radius: 8px; padding: 8px 16px; white-space: nowrap; } .ds-btn-primary:hover { filter: brightness(0.96); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #8ec5ff); outline-offset: 1px; }"
+    },
+    {
+      "name": "Zweitknopf",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Sekundäre Aktion neben einem Hauptknopf (Pause, Weiter).",
+      "html": "<button class=\"ds-btn-secondary\">Pause</button>",
+      "css": ".ds-btn-secondary { font: 500 15px/1.5 system-ui, sans-serif; background: var(--surface-2, #26262f); color: var(--text, #ececf1); border: 1px solid transparent; border-radius: 8px; padding: 8px 16px; } .ds-btn-secondary:hover { filter: brightness(0.96); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--accent, #8ec5ff); outline-offset: 1px; }"
+    },
+    {
+      "name": "Umrandeter Knopf",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Abbrechen, Verwerfen, CSV exportieren.",
+      "html": "<button class=\"ds-btn-ghost\">Abbrechen</button>",
+      "css": ".ds-btn-ghost { font: 500 15px/1.5 system-ui, sans-serif; background: transparent; color: var(--text, #ececf1); border: 1px solid var(--border, #33333e); border-radius: 8px; padding: 8px 16px; } .ds-btn-ghost:hover { filter: brightness(0.96); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--accent, #8ec5ff); outline-offset: 1px; }"
+    },
+    {
+      "name": "Löschknopf",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Nur für Löschen; Rot heisst Gefahr.",
+      "html": "<button class=\"ds-btn-danger\">Löschen</button>",
+      "css": ".ds-btn-danger { font: 500 15px/1.5 system-ui, sans-serif; background: transparent; color: var(--danger, #f06a7e); border: 1px solid var(--danger, #f06a7e); border-radius: 8px; padding: 8px 16px; } .ds-btn-danger:focus-visible { outline: 2px solid var(--accent, #8ec5ff); outline-offset: 1px; }"
+    },
+    {
+      "name": "Eingabefeld",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Textfeld mit Beschriftung darüber, 40px hoch.",
+      "html": "<label class=\"ds-field\">Kommentar<input class=\"ds-input\" placeholder=\"z. B. Level 2 Blockout\"></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 4px; font: 500 0.85rem system-ui, sans-serif; color: var(--muted, #9a9aa7); } .ds-input { font: 400 15px system-ui, sans-serif; color: var(--text, #ececf1); background: var(--surface, #1c1c23); border: 1px solid var(--border, #33333e); border-radius: 8px; padding: 8px 10px; height: 40px; } .ds-input:focus { outline: 2px solid var(--accent, #8ec5ff); outline-offset: 1px; }"
+    },
+    {
+      "name": "Tag-Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Tag zum An- und Abwählen, getönt in der eigenen Farbe.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"true\" style=\"--c:#2e86ab\">Coding</button> <button class=\"ds-chip\" aria-pressed=\"false\" style=\"--c:#f0a202\">Meeting</button>",
+      "css": ".ds-chip { --c: #9a9aa7; font: 500 0.8rem system-ui, sans-serif; padding: 3px 10px; border-radius: 999px; color: var(--text, #ececf1); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--c) 12%, transparent); } .ds-chip[aria-pressed=\"false\"] { background: transparent; border-color: var(--border, #33333e); color: var(--muted, #9a9aa7); } .ds-chip[aria-pressed=\"true\"] { background: color-mix(in srgb, var(--c) 28%, transparent); border-color: var(--c); } .ds-chip:focus-visible { outline: 2px solid var(--accent, #8ec5ff); outline-offset: 1px; }"
+    },
+    {
+      "name": "Reiter",
+      "kind": "nav",
+      "refersTo": "nav-tab-active",
+      "description": "Pillen-Reiter in der Kopfzeile, aktiver Reiter in Polarlicht-Blau.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab is-active\" href=\"#\">Erfassen</a><a class=\"ds-tab\" href=\"#\">Übersicht</a><a class=\"ds-tab\" href=\"#\">Kalender</a></nav>",
+      "css": ".ds-tabs { display: flex; gap: 4px; } .ds-tab { font: 500 15px system-ui, sans-serif; padding: 6px 14px; border-radius: 999px; color: #d6d6de; text-decoration: none; } .ds-tab:hover { color: #fff; background: var(--surface-2, #26262f); } .ds-tab.is-active { color: var(--accent-text, #131318); background: var(--accent, #8ec5ff); }"
+    },
+    {
+      "name": "Karte",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flache Werkbank-Fläche mit Naht, Titel in Unbounded.",
+      "html": "<div class=\"ds-card\"><h2 class=\"ds-card-title\">Zeit eintragen</h2><p class=\"ds-card-text\">Datum, Dauer, Tags und Kommentar.</p></div>",
+      "css": ".ds-card { background: var(--surface, #1c1c23); border: 1px solid var(--border, #33333e); border-radius: 12px; padding: 20px; color: var(--text, #ececf1); } .ds-card-title { margin: 0 0 12px; font: 500 0.95rem/1.25 Unbounded, system-ui, sans-serif; letter-spacing: -0.01em; } .ds-card-text { margin: 0; font: 400 15px/1.5 system-ui, sans-serif; color: var(--muted, #9a9aa7); }"
+    },
+    {
+      "name": "Timer-Karte",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Signatur: laufende Zeit in Polarlicht-Blau mit fliessendem Blau-Verlauf darunter.",
+      "html": "<div class=\"ds-timer\"><div class=\"ds-timer-time\">1:24:07</div><div class=\"ds-timer-flow\"></div><p class=\"ds-timer-hint\">Läuft seit 09:12 Uhr</p></div>",
+      "css": ".ds-timer { background: var(--surface, #1c1c23); border: 1px solid var(--border, #33333e); border-radius: 12px; padding: 20px; overflow: hidden; } .ds-timer-time { font: 600 2.6rem system-ui, sans-serif; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--accent, #8ec5ff); } .ds-timer-flow { width: 200%; height: 3px; margin-top: 6px; background: linear-gradient(110deg, #5b8def 0%, #8ec5ff 30%, #c2e0ff 50%, #8ec5ff 70%, #5b8def 100%) 0 0 / 50% 100% repeat-x; animation: ds-flow 6s linear infinite; } @keyframes ds-flow { to { transform: translateX(-50%); } } .ds-timer-hint { margin: 8px 0 0; font: 400 0.85rem system-ui, sans-serif; color: var(--muted, #9a9aa7); } @media (prefers-reduced-motion: reduce) { .ds-timer-flow { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Die Werkstatt bei Nacht",
+    "overview": "Fourcast ist ein dunkler, ruhiger Arbeitsplatz, an dem man abends noch an seinem Spiel bastelt. Die Werkzeuge liegen griffbereit, nichts blinkt und nichts drängt. Das Licht kommt von einer einzigen Stelle, dem Polarlicht-Blau, und es fällt genau dorthin, wo gerade gearbeitet wird: auf den Hauptknopf, den aktiven Reiter und die laufende Zeit. Alles andere bleibt im Halbdunkel der Werkbank.\n\nIn der Ecke sitzt das Logo-Wesen, ein gezeichnetes, dunkles Geschöpf mit grossen Augen. Es ist der einzige verspielte Mitbewohner der Werkstatt. Es döst blass, solange nichts läuft, schaukelt wie ein Metronom, wenn der Timer tickt, und taucht bei Meldungen und leeren Listen auf. Mehr Verspieltheit braucht die Oberfläche nicht; Charakter entsteht durch diese wenigen, gezielten Momente und durch präzise Details.\n\nKnöpfe, Karten und Felder sind ruhig und präzise: flache Flächen, feine Nähte statt Schatten, klare Zustände. Die App ist ein Werkzeug für ein Hobbyprojekt, kein Wettbewerb; die Gestaltung vermeidet deshalb alles, was nach Rangliste, Alarm oder Druck aussieht.",
+    "keyCharacteristics": [
+      "Immer dunkel, flach, getragen von Tonstufen statt Schatten.",
+      "Ein einziger Akzent (Polarlicht-Blau) für Hauptaktion und aktuellen Zustand.",
+      "Unbounded nur für Titel und die Wortmarke, alles andere in der Systemschrift.",
+      "Das Maskottchen an wenigen, festen Stellen; eine einzige Dauerbewegung (der laufende Timer).",
+      "Rot bedeutet ausschliesslich Gefahr; Pastell gehört ausschliesslich den Meilensteinen."
+    ],
+    "rules": [
+      {
+        "name": "The One Light Rule",
+        "body": "Polarlicht-Blau ist die einzige Lichtquelle. Pro Bereich gibt es höchstens einen blauen Hauptknopf; alles Sekundäre ist Ablage-grau oder nur umrandet.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Means Danger Rule",
+        "body": "Signalrot steht nur für Löschen, Fehler und Überfälliges. Anlegen, Stoppen oder Hervorheben ist nie rot.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pastel Belongs To Milestones Rule",
+        "body": "Der Pastell-Verlauf und sein Leuchten erscheinen nirgends ausser bei Meilensteinen. Für Bewegung anderswo gibt es den Blau-Verlauf.",
+        "section": "colors"
+      },
+      {
+        "name": "The Unbounded Is For Names Rule",
+        "body": "Unbounded nur für Titel, Spalten- und Swimlane-Namen und die Wortmarke. Nie für Fliesstext, Zahlen oder Knöpfe.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Numbers Rule",
+        "body": "Alle Zeiten, Dauern und Summen nutzen tabellarische Ziffern, damit nichts springt, wenn der Timer läuft.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Workbench Rule",
+        "body": "Flächen heben sich durch Ton und Naht ab, nie durch Schatten. Ein neuer Schatten braucht eine Funktion (Zustand, Einfügemarke), keine Dekoration.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** Polarlicht-Blau (#8ec5ff) nur für die Hauptaktion, den aktuellen Zustand und den Fokus verwenden.",
+      "**Do** Tiefe mit den drei Tonstufen (#131318, #1c1c23, #26262f) und 1px-Nähten (#33333e) erzeugen.",
+      "**Do** Unbounded auf Titel, Spalten-, Swimlane-Namen und die Wortmarke beschränken.",
+      "**Do** für Zeiten und Summen tabellarische Ziffern nutzen.",
+      "**Do** Icons als einheitliche Strich-Icons (24er-Raster, Strich 2, runde Enden) zeichnen; der ★ bleibt das einzige Textzeichen, und nur beim Meilenstein.",
+      "**Do** Bewegung für `prefers-reduced-motion` abschalten und Dauerbewegungen nur über `transform` animieren.",
+      "**Do** Personen in fester Reihenfolge (nach Namen) zeigen, wenn Zeiten verglichen werden."
+    ],
+    "donts": [
+      "**Don't** Rot für Anlegen, Stoppen oder Hervorheben verwenden; Signalrot (#f06a7e) heisst Gefahr.",
+      "**Don't** den Meilenstein-Pastellverlauf oder sein Leuchten für irgendetwas anderes als Meilensteine einsetzen.",
+      "**Don't** den aktiven Reiter oder Knöpfe mit Verläufen füllen; der Blau-Verlauf gehört nur dem laufenden Timer.",
+      "**Don't** farbige Seitenstreifen an Karten, Listen oder Meldungen setzen; Kategorie und Person zeigen Punkte, Chips oder Swimlane-Linien.",
+      "**Don't** Schatten zur Erhöhung hinzufügen.",
+      "**Don't** Emojis oder Textzeichen als Icons verwenden.",
+      "**Don't** Ranglisten bauen oder Zeiten nach Menge sortieren.",
+      "**Don't** neue Maskottchen-Posen erfinden; nur gezeichnete Vorlagen des Teams verwenden."
+    ]
+  }
+}

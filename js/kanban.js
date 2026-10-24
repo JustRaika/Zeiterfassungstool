@@ -1,7 +1,8 @@
 // Tab "Tasks": gemeinsame Aufgaben als Kanban-Board (Drag & Drop) oder als Liste.
 
 import {
-  $, confirmDialog, esc, fmtDate, icon, isoDate, personLabel, tagChips, toast, toggleChip, toggleChips,
+  $, confirmDialog, esc, fmtDate, formState, guardDialog, icon, isoDate, personLabel, tagChips, toast, toggleChip,
+  toggleChips,
 } from './util.js';
 
 const COLUMNS = [
@@ -40,6 +41,7 @@ let dialogSubtasks = []; // [{ title, done }]
 // { card (null = neu), images: Pfade, urls: { pfad: Link }, uploads: hier hochgeladen,
 //   uploading, saving, saved, closed }
 let dlg = newDialogState(null);
+let cardGuard; // fragt vor dem Verwerfen ungespeicherter Änderungen nach
 let draggedId = null;
 let view = loadView(); // 'board' | 'list'
 let onlyMine = loadMine(); // "Nur meine" (nur Board; die Liste hat ihren Filter "Zuständig")
@@ -97,7 +99,8 @@ export function init(c) {
 
   const form = $('#card-form');
   form.addEventListener('submit', saveCard);
-  $('#card-cancel').addEventListener('click', () => $('#card-dialog').close());
+  cardGuard = guardDialog($('#card-dialog'), $('#card-cancel'), () => formState(form,
+    [...dialogAssignees].sort(), [...dialogTags].sort(), dialogSubtasks, dlg.images), () => dlg.saving);
   $('#card-delete').addEventListener('click', deleteCard);
   $('#card-tags').addEventListener('click', (e) => toggleChip(e, dialogTags, 'tag'));
   $('#card-assignees').addEventListener('click', (e) => toggleChip(e, dialogAssignees, 'member'));
@@ -576,6 +579,7 @@ function openDialog(card, status = 'backlog', category = '') {
   $('#card-delete').hidden = !card;
   const creator = card && ctx.memberMap.get(card.created_by);
   $('#card-meta').textContent = creator ? `Angelegt von ${creator.display_name}` : '';
+  cardGuard.markClean();
   $('#card-dialog').showModal();
   form.title.focus();
 }
