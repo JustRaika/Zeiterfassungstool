@@ -46,9 +46,17 @@ export function sumMinutes(entries) {
   return entries.reduce((sum, e) => sum + e.duration_minutes, 0);
 }
 
+export function tagColor(name, tagMap) {
+  return tagMap.get(name)?.color || '#6b7280';
+}
+
+// Ein Tag als Chip; extraHtml steht hinter dem Namen (z. B. Stunden)
+export function tagChip(name, tagMap, extraHtml = '') {
+  return `<span class="chip" style="--c:${esc(tagColor(name, tagMap))}">${esc(name)}${extraHtml}</span>`;
+}
+
 export function tagChips(tagNames, tagMap) {
-  return tagNames.map((name) =>
-    `<span class="chip" style="--c:${esc(tagMap.get(name)?.color || '#6b7280')}">${esc(name)}</span>`).join('');
+  return tagNames.map((name) => tagChip(name, tagMap)).join('');
 }
 
 // Chips zum An- und Abwählen (Tags, Personen). items: [{ value, label, color }],

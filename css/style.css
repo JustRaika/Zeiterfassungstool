@@ -234,6 +234,64 @@ label.chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-
 }
 .timer-card.running .timer-display { color: var(--accent); }
 
+/* ---------- Maskottchen und Timer-Verlauf (Charakter, sparsam eingesetzt) ---------- */
+:root {
+  /* Blau-Verlauf rund um den Akzent, nur für den laufenden Timer. Der Pastell-Verlauf
+     (--milestone) gehört nur den Meilensteinen. Anfang = Ende, damit er nahtlos fliesst. */
+  --blue-flow: linear-gradient(110deg, #5b8def 0%, #8ec5ff 30%, #c2e0ff 50%, #8ec5ff 70%, #5b8def 100%);
+  --mascot: url("../img/logo.png");
+}
+/* Das Logo-Wesen schaut beim Timer zu: blass, solange nichts läuft, schaukelt, wenn er läuft */
+.timer-card { position: relative; }
+.mascot {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 48px;
+  height: 48px;
+  opacity: 0.45;
+  filter: grayscale(0.4);
+  transform-origin: 50% 90%;
+  transition: opacity 0.4s ease-out, filter 0.4s ease-out;
+}
+.timer-card.running .mascot { opacity: 1; filter: none; animation: mascot-sway 2.8s ease-in-out infinite; }
+/* Abwechselnd nach links und rechts, wie ein Metronom */
+@keyframes mascot-sway {
+  0%, 100% { transform: translateX(-2px) rotate(-7deg); }
+  50% { transform: translateX(2px) rotate(7deg); }
+}
+/* Laufende Zeit: schmaler, fliessender Blau-Verlauf darunter. Die Linie ist doppelt so breit
+   (zwei Verlauf-Perioden) und wird per transform verschoben; das läuft ohne Neuzeichnen, auch
+   wenn der Timer stundenlang läuft. */
+.timer-card.running .timer-display { overflow: hidden; }
+.timer-card.running .timer-display::after {
+  content: "";
+  display: block;
+  width: 200%;
+  height: 3px;
+  margin-top: 6px;
+  background: var(--blue-flow) 0 0 / 50% 100% repeat-x;
+  animation: blue-flow 6s linear infinite;
+  will-change: transform;
+}
+@keyframes blue-flow { to { transform: translateX(-50%); } }
+
+/* Das Wesen als kleines Bild vor leeren Zuständen und Meldungen (Grösse über --mascot-size) */
+p.empty::before, li.empty::before, #toast:not(.error)::before {
+  content: "";
+  width: var(--mascot-size, 32px);
+  height: var(--mascot-size, 32px);
+  flex: none;
+  background: var(--mascot) center / contain no-repeat;
+}
+/* Leere Zustände: das Wesen hält die Stellung (td.empty in Tabellen bewusst ohne) */
+p.empty, li.empty { display: flex; align-items: center; gap: 10px; }
+p.empty::before, li.empty::before { opacity: 0.7; }
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-card.running .mascot, .timer-card.running .timer-display::after { animation: none; }
+}
+
 /* ---------- Eintragslisten ---------- */
 .stats { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.85rem; color: var(--muted); }
 .stats b { color: var(--text); font-weight: 600; }
@@ -266,6 +324,9 @@ form.filters .field { margin-bottom: 0; }
 .bar > span { display: block; height: 100%; background: var(--c, var(--accent)); border-radius: 999px; }
 .bar-row .val { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .bar-row .val b { display: inline-block; min-width: 3.6em; }
+.bar-row .areas { grid-column: 2 / -1; }
+.bar-row.selected .name { font-weight: 700; }
+.bar-row.selected .bar { outline: 1px solid var(--text); outline-offset: 2px; }
 
 .table-wrap { overflow-x: auto; }
 table.entries { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
@@ -339,7 +400,8 @@ input.flash { animation: flash 1.6s ease-out; }
 }
 .upcoming li:first-child { border-top: 0; }
 .upcoming li:hover { background: var(--surface-2); }
-.upcoming li.empty { padding-left: 0; cursor: default; }
+/* Leerer Zustand: Flex statt des Rasters der Termin-Zeilen, damit das Maskottchen vor dem Text steht */
+.upcoming li.empty { display: flex; padding-left: 0; cursor: default; }
 .upcoming .when { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .upcoming .countdown { white-space: nowrap; font-size: 0.8rem; grid-row: 1; grid-column: 2; }
 .upcoming .what { grid-column: 1 / -1; }
@@ -400,14 +462,18 @@ kbd {
 .kanban-col-foot { border-bottom: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius); height: 12px; }
 .kanban-col-head h2 { margin: 0; font-size: 0.9rem; }
 .kanban-col-head .count { font-family: var(--font-text); font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-left: 4px; }
+/* Trennlinie pro Kategorie, mit Beschriftung direkt an der Linie (statt einer Legende oben) */
 .kanban-lane-sep {
   grid-column: 1 / -1;
-  height: 2px;
-  margin: 6px 0;
-  border-radius: 2px;
-  background: var(--c);
-  opacity: 0.75;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 6px;
+  color: var(--c);
+  font: 500 0.8rem var(--font-display);
+  letter-spacing: 0.01em;
 }
+.kanban-lane-sep::after { content: ""; flex: 1; height: 2px; border-radius: 2px; background: var(--c); opacity: 0.75; }
 .kanban-list { display: flex; flex-direction: column; gap: 8px; min-height: 44px; padding-top: 4px; padding-bottom: 4px; cursor: var(--cursor), pointer; }
 /* Freie Stelle unter dem Mauszeiger hervorheben: Klick legt dort einen Task an */
 .kanban-list:hover:not(:has(.kanban-card:hover)) { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); }
@@ -430,9 +496,6 @@ kbd {
 .prio-1 { background: var(--text); border-color: var(--text); color: #1c1c23; }
 .prio-2 { border-color: var(--text); color: var(--text); }
 .prio-3 { color: var(--muted); }
-.kanban-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--muted); }
-.legend-item { display: inline-flex; align-items: center; gap: 6px; }
-.legend-item::before { content: ""; width: 4px; height: 14px; border-radius: 2px; background: var(--c); }
 .kanban-title { font-weight: 600; overflow-wrap: anywhere; }
 .kanban-list[data-status="done"] .kanban-title { color: var(--muted); text-decoration: line-through; }
 .kanban-card .chips { gap: 4px; }
@@ -567,6 +630,11 @@ dialog input.title-input::placeholder { color: var(--muted); }
   transition: opacity 0.2s, transform 0.2s;
   max-width: calc(100vw - 32px);
   z-index: 100;
+  /* Meldungen (ausser Fehlern) mit dem Maskottchen davor, siehe ::before oben */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  --mascot-size: 24px;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 #toast.error { background: var(--danger); color: #fff; }

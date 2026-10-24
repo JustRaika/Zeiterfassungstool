@@ -1,11 +1,14 @@
 // Tab "Übersicht": alle Einträge, Filter, Anteile pro Person, Zeit nach Tags, CSV-Export.
 
-import { $, esc, fmtDate, fmtDuration, fmtHours, fmtPercent, isoDate, personLabel, sumMinutes, tagChips } from './util.js';
+import {
+  $, esc, fmtDate, fmtDuration, fmtHours, fmtPercent, isoDate, personLabel, sumMinutes, tagChip, tagChips, tagColor,
+} from './util.js';
 import { deleteEntry } from './erfassen.js';
 
 // Die Tabelle zeigt zuerst nur die neuesten Einträge; „Alle anzeigen“ blendet den Rest ein,
 // bis ein Filter geändert wird.
 const TABLE_LIMIT = 50;
+const AREA_COUNT = 3; // Hauptbereiche (Tags) pro Person
 
 let ctx;
 let showAll = false;
@@ -65,62 +68,76 @@ function filtered() {
   const [from, to] = periodRange();
   const tag = $('#f-tag').value;
   const person = $('#f-person').value;
-  // Basis für die Anteile: Zeitraum + Tag, aber alle Personen
+  // Basis für "Wer hat woran gearbeitet": Zeitraum + Tag, aber alle Personen
   const base = ctx.entries.filter((e) =>
     (!from || e.date >= from) && (!to || e.date <= to) && (!tag || e.tags.includes(tag)));
   const list = person ? base.filter((e) => e.member === person) : base;
-  return { base, list, tag };
+  return { base, list, tag, person };
 }
 
 function render() {
   const custom = $('#f-period').value === 'custom';
   for (const el of document.querySelectorAll('.custom-range')) el.hidden = !custom;
 
-  const { base, list, tag } = filtered();
-  renderShares(base, tag);
+  const { base, list, tag, person } = filtered();
+  renderShares(base, tag, person);
   renderTagSums(list);
   renderTable(list);
 }
 
-function barRow(labelHtml, minutes, fraction, color, valueHtml) {
-  return `<div class="bar-row">
+// Balken = Anteil an der Gesamtzeit (bei Personen und Tags derselbe Massstab).
+// extraHtml steht unter Balken und Wert (z. B. die Hauptbereiche einer Person).
+function barRow(labelHtml, fraction, color, valueHtml, extraHtml = '', selected = false) {
+  return `<div class="bar-row${selected ? ' selected' : ''}">
     <span class="name">${labelHtml}</span>
     <span class="bar"><span style="width:${(fraction * 100).toFixed(2)}%; --c:${esc(color)}"></span></span>
     <span class="val">${valueHtml}</span>
+    ${extraHtml}
   </div>`;
 }
 
-function renderShares(base, tag) {
-  $('#shares-tag-note').textContent = tag ? ` (nur Tag „${tag}“)` : '';
+// Minuten pro Tag; Einträge mit mehreren Tags zählen bei jedem Tag voll
+function tagSums(entries) {
+  const sums = new Map();
+  for (const e of entries) {
+    for (const t of e.tags.length ? e.tags : ['(ohne Tag)']) {
+      sums.set(t, (sums.get(t) || 0) + e.duration_minutes);
+    }
+  }
+  return [...sums].sort((a, b) => b[1] - a[1]);
+}
+
+// Feste Reihenfolge nach Namen (keine Rangliste). Pro Person die Hauptbereiche, denn
+// Stunden sagen nichts über das Ergebnis.
+function renderShares(base, tag, person) {
+  const notes = [tag && `nur Tag „${tag}“`, person && 'immer alle Personen, gewählte hervorgehoben'].filter(Boolean);
+  $('#shares-tag-note').textContent = notes.length ? ` (${notes.join(', ')})` : '';
   const total = sumMinutes(base);
   if (!total) {
     $('#shares').innerHTML = '<p class="empty">Keine Einträge im gewählten Zeitraum.</p>';
     return;
   }
-  const rows = ctx.members
-    .map((m) => ({ m, minutes: sumMinutes(base.filter((e) => e.member === m.github_username)) }))
-    .sort((a, b) => b.minutes - a.minutes);
-  $('#shares').innerHTML = rows.map(({ m, minutes }) =>
-    barRow(personLabel(m), minutes, minutes / total, m.color,
-      `<b>${fmtPercent(minutes / total)}</b> <span class="muted">${fmtHours(minutes)}</span>`)).join('') +
-    `<p class="muted small">Gesamt: ${fmtHours(total)}</p>`;
+  const members = [...ctx.members].sort((a, b) => a.display_name.localeCompare(b.display_name, 'de'));
+  $('#shares').innerHTML = members.map((m) => {
+    const own = base.filter((e) => e.member === m.github_username);
+    const minutes = sumMinutes(own);
+    const areas = tagSums(own).slice(0, AREA_COUNT).map(([name, min]) =>
+      tagChip(name, ctx.tagMap, ` <span class="muted">${fmtHours(min)}</span>`)).join('');
+    return barRow(personLabel(m), minutes / total, m.color,
+      `<b>${fmtHours(minutes)}</b> <span class="muted small">${fmtPercent(minutes / total)}</span>`,
+      areas && `<span class="chips areas">${areas}</span>`, m.github_username === person);
+  }).join('') + `<p class="muted small">Gesamt: ${fmtHours(total)}</p>`;
 }
 
 function renderTagSums(list) {
-  const sums = new Map();
-  for (const e of list) {
-    for (const t of e.tags.length ? e.tags : ['(ohne Tag)']) {
-      sums.set(t, (sums.get(t) || 0) + e.duration_minutes);
-    }
-  }
-  if (!sums.size) {
+  const sorted = tagSums(list);
+  if (!sorted.length) {
     $('#tag-sums').innerHTML = '<p class="empty">Keine Einträge.</p>';
     return;
   }
-  const sorted = [...sums].sort((a, b) => b[1] - a[1]);
-  const max = sorted[0][1];
+  const total = sumMinutes(list);
   $('#tag-sums').innerHTML = sorted.map(([name, minutes]) =>
-    barRow(esc(name), minutes, minutes / max, ctx.tagMap.get(name)?.color || '#6b7280', fmtHours(minutes))).join('');
+    barRow(esc(name), minutes / total, tagColor(name, ctx.tagMap), fmtHours(minutes))).join('');
 }
 
 function renderTable(list) {

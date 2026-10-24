@@ -12,7 +12,7 @@ Das Team von Fourcast, einem kleinen Unternehmen bzw. Startup. Alle Mitglieder n
 
 ## Product Purpose
 
-Gemeinsame Zeiterfassung, Kalender und Aufgabenboard für das Team, als Ersatz für eine Excel-Tabelle. Die erfassten Stunden dienen vor allem einem fairen Überblick im Team: wer wie viel woran gearbeitet hat (Anteile in Prozent pro Person, Zeit nach Tags). Erfolg heißt, dass Zeit schnell und vollständig erfasst wird und alle jederzeit ein ehrliches Bild der Verteilung haben.
+Gemeinsame Zeiterfassung, Kalender und Aufgabenboard für das Team, als Ersatz für eine Excel-Tabelle. Fourcast entwickelt (Spiele-)Projekte als Hobby. Die Zeiten werden erfasst, damit ein möglicher späterer Erlös gerecht aufgeteilt werden kann; im Alltag spielen sie kaum eine Rolle. Es ist ausdrücklich **kein Wettbewerb**, wer am meisten Zeit investiert. Stunden sind nicht gleich Ergebnis (12 h Concept Art können ein Bild sein, 2 h Bugfixing fünf Fixes), deshalb zeigt die Übersicht, wer **woran** gearbeitet hat, nicht wer vorne liegt. Erfolg heißt, dass Zeit schnell und vollständig erfasst wird und alle jederzeit ein ehrliches Bild haben.
 
 ## Positioning
 
@@ -39,6 +39,9 @@ Ein schlankes, selbst gebautes Teamwerkzeug statt eines generischen SaaS-Produkt
 
 - Name: „Fourcast Zeiterfassung“, Wortmarke „Fourcast“; Logo unter `img/logo.png`, eigener Cursor unter `img/cursor.png`.
 - Tonfall in der App: locker, aber sachlich. Freundlich und klar; Witze und Augenzwinkern bleiben eher im README.
+- Das Logo-Wesen (dunkles, gezeichnetes Wesen mit grossen Augen) ist das Maskottchen und darf an ausgewählten Stellen auftauchen (leere Zustände, Erfolg, laufender Timer). Weitere Posen/Ausdrücke müsste das Team selbst zeichnen; nicht erfinden.
+- Der Pastell-Verlauf (inkl. Leuchten) gehört ausschliesslich den Meilensteinen und wird nirgends sonst verwendet. Der laufende Timer hat einen fliessenden Blau-Verlauf rund um die Akzentfarbe; Reiter und Knöpfe bleiben im einfarbigen Standard-Blau.
+- Gemischte Sprache auf dem Board (Backlog, To Do) ist gewollt.
 
 ## Evidence on Hand
 
@@ -48,6 +51,6 @@ Ein schlankes, selbst gebautes Teamwerkzeug statt eines generischen SaaS-Produkt
 ## Product Principles
 
 1. **Erfassen muss schneller sein als Vergessen.** Der Weg vom Arbeitsbeginn zum gespeicherten Eintrag ist so kurz wie möglich.
-2. **Fairness durch Transparenz.** Alle sehen dieselben Zahlen; die Übersicht erklärt die Verteilung ehrlich und ohne Interpretation.
+2. **Fairness durch Transparenz, ohne Rangliste.** Alle sehen dieselben Zahlen; die Übersicht erklärt die Verteilung ehrlich, in fester Reihenfolge und mit dem Fokus auf Art des Beitrags statt Menge.
 3. **Eigene Daten schützen, fremde respektieren.** Klar erkennbar, was man selbst ändern darf und was nicht.
 4. **Einfach bleiben.** Kein Build, kein Framework, keine Funktion, die das Team nicht wirklich braucht.

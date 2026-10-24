@@ -22,6 +22,7 @@ const CATEGORIES = {
 
 const PRIORITIES = { 1: 'Prio 1', 2: 'Prio 2', 3: 'Prio 3' };
 const VIEW_KEY = 'fourcast-tasks-view';
+const MINE_KEY = 'fourcast-tasks-mine';
 const MAX_IMAGES = 10;        // pro Task
 const MAX_IMAGE_SIDE = 1600;  // px, Bilder werden vor dem Hochladen verkleinert
 // Hochgeladene, aber (noch) nicht gespeicherte Bilder: { pfad: Zeitpunkt }. Wird die Seite mit
@@ -41,6 +42,7 @@ let dialogSubtasks = []; // [{ title, done }]
 let dlg = newDialogState(null);
 let draggedId = null;
 let view = loadView(); // 'board' | 'list'
+let onlyMine = loadMine(); // "Nur meine" (nur Board; die Liste hat ihren Filter "Zuständig")
 // Filter der Listenansicht ('' = alle)
 let filters = { q: '', person: '', category: '', priority: '', status: '' };
 
@@ -53,6 +55,21 @@ function setView(next) {
   view = next;
   try { localStorage.setItem(VIEW_KEY, next); } catch { /* egal */ }
   render();
+}
+
+function loadMine() {
+  try { return localStorage.getItem(MINE_KEY) === '1'; } catch { return false; }
+}
+
+function toggleMine() {
+  onlyMine = !onlyMine;
+  try { localStorage.setItem(MINE_KEY, onlyMine ? '1' : '0'); } catch { /* egal */ }
+  render();
+}
+
+// Karten, die das Board gerade zeigt
+function boardCards() {
+  return onlyMine ? cards.filter((c) => c.assignees.includes(ctx.me.github_username)) : cards;
 }
 
 export function init(c) {
@@ -74,6 +91,7 @@ export function init(c) {
     if (btn) setView(btn.dataset.view);
   });
   $('#task-new').addEventListener('click', () => openDialog(null));
+  $('#tasks-mine').addEventListener('click', toggleMine);
   setupFilters();
   renderChoices();
 
@@ -149,6 +167,8 @@ function render() {
   for (const btn of document.querySelectorAll('#tasks-view-toggle [data-view]')) {
     btn.setAttribute('aria-pressed', btn.dataset.view === view);
   }
+  $('#tasks-mine').setAttribute('aria-pressed', onlyMine);
+  $('#tasks-mine').hidden = view !== 'board';
   $('#board').hidden = view !== 'board';
   $('.board-hint').hidden = view !== 'board';
   $('#task-filters').hidden = view !== 'list';
@@ -159,9 +179,10 @@ function render() {
 // ---------------------------------------------------------------------
 // Gemeinsame Bausteine
 // ---------------------------------------------------------------------
-// Karten einer Zelle (Status + Kategorie), sortiert
-function cardsIn(status, category) {
-  return cards
+// Karten einer Zelle (Status + Kategorie) aus list, sortiert. list: was das Board zeigt
+// (Anzeige, Drag & Drop) oder alle Karten (Position beim Speichern)
+function cardsIn(list, status, category) {
+  return list
     .filter((c) => c.status === status && (CATEGORIES[c.category] ? c.category : '') === category)
     .sort((a, b) => a.position - b.position);
 }
@@ -199,18 +220,19 @@ function dueHtml(c) {
 // Karten ohne Kategorie kommen in eine letzte Zeile, aber nur wenn es welche gibt.
 function renderBoard() {
   const lanes = Object.keys(CATEGORIES);
-  if (cards.some((c) => !CATEGORIES[c.category])) lanes.push('');
+  const shown = boardCards();
+  if (shown.some((c) => !CATEGORIES[c.category])) lanes.push('');
 
   const head = COLUMNS.map(([status, label]) => `
     <header class="kanban-col-head">
-      <h2>${label} <span class="count">${cards.filter((c) => c.status === status).length}</span></h2>
+      <h2>${label} <span class="count">${shown.filter((c) => c.status === status).length}</span></h2>
     </header>`).join('');
 
   const rows = lanes.map((category) => `
-    <div class="kanban-lane-sep" style="--c:${catColor(category)}"></div>
+    <div class="kanban-lane-sep" style="--c:${catColor(category)}">${CATEGORIES[category]?.label || 'Ohne Kategorie'}</div>
     ${COLUMNS.map(([status]) => `
       <div class="kanban-list" data-status="${status}" data-category="${category}" title="Klicken, um hier einen Task anzulegen">
-        ${cardsIn(status, category).map(cardHtml).join('')}
+        ${cardsIn(shown, status, category).map(cardHtml).join('')}
       </div>`).join('')}`).join('');
 
   $('#board').innerHTML = head + rows + COLUMNS.map(() => '<div class="kanban-col-foot"></div>').join('');
@@ -366,7 +388,7 @@ async function onDrop(e) {
   const beforeEl = dropTarget(list, e.clientY);
   clearDropMarkers();
 
-  const colCards = cardsIn(status, list.dataset.category).filter((c) => c.id !== id);
+  const colCards = cardsIn(boardCards(), status, list.dataset.category).filter((c) => c.id !== id);
   const idx = beforeEl ? colCards.findIndex((c) => c.id === beforeEl.dataset.id) : colCards.length;
   const prev = colCards[idx - 1];
   const next = colCards[idx];
@@ -586,7 +608,7 @@ async function saveCard(e) {
   };
   // Neue Karte oder Spalten-/Kategoriewechsel: ans Ende der Zelle
   if (!editing || editing.status !== status || (editing.category || null) !== payload.category) {
-    const cell = cardsIn(status, payload.category || '').filter((c) => c.id !== editing?.id);
+    const cell = cardsIn(cards, status, payload.category || '').filter((c) => c.id !== editing?.id);
     payload.position = cell.length ? cell.at(-1).position + 1 : 0;
   }
 

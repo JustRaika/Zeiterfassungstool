@@ -76,6 +76,7 @@
       <section id="view-erfassen" class="view" hidden>
         <div class="grid erfassen-grid">
           <div class="card timer-card">
+            <img src="img/logo.png" alt="" class="mascot">
             <h2>Timer</h2>
             <div id="timer-display" class="timer-display">0:00:00</div>
             <p id="timer-hint" class="muted small">Läuft nicht.</p>
@@ -166,8 +167,8 @@
 
         <div class="grid two">
           <div class="card">
-            <h2>Anteile</h2>
-            <p class="muted small">Anteil jeder Person an der Gesamtzeit im gewählten Zeitraum<span id="shares-tag-note"></span>.</p>
+            <h2>Wer hat woran gearbeitet</h2>
+            <p class="muted small">Stunden im gewählten Zeitraum<span id="shares-tag-note"></span>. Zeit ist nicht gleich Ergebnis, darum stehen die Hauptbereiche dabei.</p>
             <div id="shares" class="bars"></div>
           </div>
           <div class="card">
@@ -214,12 +215,7 @@
       <!-- Tasks: Kanban-Board oder Liste -->
       <section id="view-tasks" class="view" hidden>
         <div class="tasks-toolbar">
-          <div class="kanban-legend">
-            <span class="legend-item" style="--c:#e879f9">Design</span>
-            <span class="legend-item" style="--c:#4169e1">Code</span>
-            <span class="legend-item" style="--c:#cbd5e1">Admin</span>
-            <span class="legend-item" style="--c:#a3e635">Testing</span>
-          </div>
+          <button type="button" id="tasks-mine" class="chip" aria-pressed="false">Nur meine</button>
           <div id="tasks-view-toggle" class="segmented" role="group" aria-label="Ansicht">
             <button type="button" data-view="board" aria-pressed="true">Board</button>
             <button type="button" data-view="list" aria-pressed="false">Liste</button>
