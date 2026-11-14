@@ -118,3 +118,10 @@ Nachdem die Grundfunktionen liefen, habe ich die App systematisch auf Usability 
 <img width="3838" height="2038" alt="Screenshot 2026-10-21 022813" src="https://github.com/user-attachments/assets/a538efbd-fa16-4531-a999-5c2e67d43c83" />
 <img width="3838" height="2029" alt="Screenshot 2026-10-21 022831" src="https://github.com/user-attachments/assets/a16ff4be-3222-4d32-abdf-ee61bbf11b81" />
 <img width="3836" height="2022" alt="image" src="https://github.com/user-attachments/assets/8e074937-663b-48f6-91a6-3721366f5a80" />
+
+<img width="3838" height="2022" alt="Screenshot 2026-11-14 163822" src="https://github.com/user-attachments/assets/8c4e6485-1993-4a54-8c43-e159b73eaa96" />
+<img width="3829" height="2034" alt="Screenshot 2026-11-14 163814" src="https://github.com/user-attachments/assets/19763bd2-bb47-4078-9b2e-027b45e0b6e3" />
+<img width="3838" height="2022" alt="Screenshot 2026-11-14 163804" src="https://github.com/user-attachments/assets/0462a4c2-2c9c-43f8-bba8-455a7374247c" />
+<img width="3836" height="2029" alt="Screenshot 2026-11-14 163757" src="https://github.com/user-attachments/assets/9523b8b0-645e-4055-b960-ff3912e9dc8e" />
+<img width="3838" height="2007" alt="Screenshot 2026-11-14 163749" src="https://github.com/user-attachments/assets/1407e8b3-e572-47a3-b568-83036c035349" />
+
