@@ -1,0 +1,9 @@
+{
+  "name": "fourcast-zeiterfassung",
+  "private": true,
+  "type": "module",
+  "description": "Nur für die Tests (node --test). Die App selbst braucht weder Node noch einen Build.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

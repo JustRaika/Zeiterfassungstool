@@ -99,6 +99,18 @@ do $$ begin
   end if;
 end $$;
 
+-- Datei-Sperren: Wer arbeitet gerade an welcher Datei (oder welchem Ordner, mit "/" am Ende) im
+-- Unreal-Projekt? Eine Absprache im Team, keine technische Sperre im Repository.
+create table if not exists public.file_locks (
+  id        uuid primary key default gen_random_uuid(),
+  path      text not null check (path = btrim(path) and char_length(path) between 1 and 300),
+  note      text check (note is null or char_length(note) <= 200),
+  locked_by text not null references public.members (github_username) on update cascade on delete cascade,
+  locked_at timestamptz not null default now()
+);
+-- Jeder Pfad nur einmal, Gross/Klein egal (Windows unterscheidet es auch nicht)
+create unique index if not exists file_locks_path_unique on public.file_locks (lower(path));
+
 
 -- ---------------------------------------------------------------------
 -- Wer ist gerade eingeloggt?
@@ -156,6 +168,7 @@ grant execute on function public.keep_alive() to anon, authenticated;
 alter table public.time_entries alter column member set default public.current_member();
 alter table public.events alter column created_by set default public.current_member();
 alter table public.kanban_cards alter column created_by set default public.current_member();
+alter table public.file_locks alter column locked_by set default public.current_member();
 
 
 -- ---------------------------------------------------------------------
@@ -166,6 +179,7 @@ alter table public.tags         enable row level security;
 alter table public.time_entries enable row level security;
 alter table public.events       enable row level security;
 alter table public.kanban_cards enable row level security;
+alter table public.file_locks   enable row level security;
 
 -- members: alle im Team sehen alle, ändern nur die eigene Zeile
 drop policy if exists "members_select" on public.members;
@@ -221,6 +235,30 @@ create policy "kanban_all" on public.kanban_cards
   for all to authenticated
   using (public.current_member() is not null)
   with check (public.current_member() is not null);
+
+-- file_locks: alle sehen alle Sperren; sperren nur im eigenen Namen, freigeben nur eigene (Admins: alle).
+-- Ändern gibt es nicht: freigeben und neu sperren.
+drop policy if exists "locks_select" on public.file_locks;
+create policy "locks_select" on public.file_locks
+  for select to authenticated using (public.current_member() is not null);
+
+drop policy if exists "locks_insert_own" on public.file_locks;
+create policy "locks_insert_own" on public.file_locks
+  for insert to authenticated with check (locked_by = public.current_member());
+
+drop policy if exists "locks_delete_own" on public.file_locks;
+create policy "locks_delete_own" on public.file_locks
+  for delete to authenticated using (locked_by = public.current_member() or public.is_admin());
+
+revoke update on public.file_locks from anon, authenticated;
+
+-- Live-Aktualisierung (Supabase Realtime): Änderungen an den Sperren sofort an alle offenen Seiten melden
+do $$ begin
+  if not exists (select 1 from pg_publication_tables
+                 where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'file_locks') then
+    alter publication supabase_realtime add table public.file_locks;
+  end if;
+end $$;
 
 
 -- ---------------------------------------------------------------------

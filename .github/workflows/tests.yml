@@ -1,0 +1,22 @@
+# Lässt bei jedem Push die Tests laufen (tests/, mit dem in Node eingebauten Test-Runner).
+# Die App selbst braucht keinen Build; hier wird nur die Rechenlogik geprüft.
+
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test

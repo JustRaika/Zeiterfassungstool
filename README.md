@@ -12,7 +12,9 @@ Ein schlankes Web-Tool, mit dem unser 5-köpfiges Indie-Game-Team Arbeitszeit, T
   „Wer hat woran gearbeitet“ (Stunden und Hauptbereiche pro Person, ohne Rangliste), Zeit nach Tags und CSV-Export für Excel als Backup.
 - **Tasks:** Kanban-Board mit Zeilen pro Kategorie oder als Liste, Umschalter „Nur meine“.
 - **Kalender:** gemeinsame Termine (Monat / Woche / Liste). Neue Termine per Klick auf einen Tag,
-  verschieben per Drag & Drop.
+  verschieben per Drag & Drop. Offene Tasks mit Fälligkeit stehen umrandet mit drin.
+- **Dateien:** eintragen, an welchen Dateien im Unreal-Projekt man gerade arbeitet, damit niemand
+  dieselbe Datei gleichzeitig ändert. Die Liste aktualisiert sich live.
 
 Jede Person kann nur ihre eigenen Zeiteinträge ändern oder löschen, mit Ausnahme vom Admin (Big Brother is watching you).
 
@@ -26,6 +28,12 @@ Ohne Zugangsdaten in `js/config.js` läuft die App lokal im Demo-Modus mit Beisp
 
 ```bash
 npx serve -l 8000
+```
+
+Die Rechenlogik (Timer, Zeiträume, CSV, Filter, Datei-Sperren) ist mit Tests abgesichert. Sie laufen bei jedem Push automatisch und lokal mit:
+
+```bash
+node --test
 ```
 ## Recruiter Mode
 Wir sind fünf Leute, die ohne Budget an einem Game arbeiten. Falls es Geld einbringt, soll jede Person den Anteil bekommen, den sie auch beigetragen hat. Dafür braucht es eine Grundlage, der alle vertrauen. Ich habe ein Tool gebaut, in dem sich alle mit ihrem GitHub-Account anmelden. Man erfasst die Zeit per Timer oder von Hand, mit Tag und kurzem Kommentar. Die Übersicht rechnet die Prozent-Anteile pro Person live aus. Dazu gibt es einen gemeinsamen Kalender mit Meilensteinen und ein Task-Board. Das Tool kostet nichts, läuft im Browser und ist bewusst schlicht gehalten, damit es auch wirklich benutzt wird.

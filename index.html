@@ -52,14 +52,30 @@
     </div>
   </section>
 
-  <div id="app" hidden>
-    <header class="topbar">
-      <div class="brand"><img src="img/logo.png" alt="" class="logo"><span class="wordmark">Fourcast</span> <span>Zeiterfassung</span></div>
-      <nav class="tabs">
-        <a href="#erfassen" data-tab="erfassen">Erfassen</a>
-        <a href="#uebersicht" data-tab="uebersicht">Übersicht</a>
-        <a href="#kalender" data-tab="kalender">Kalender</a>
-        <a href="#tasks" data-tab="tasks">Tasks</a>
+  <div id="app" class="app" hidden>
+    <!-- Seitenleiste: Marke, Bereiche, Person. Auf schmalen Bildschirmen wird sie zur Kopfzeile. -->
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="img/logo.png" alt="" class="logo">
+        <span class="brand-text"><span class="wordmark">Fourcast</span> <span class="brand-sub">Zeiterfassung</span></span>
+      </div>
+      <nav class="tabs" aria-label="Bereiche">
+        <a href="#erfassen" data-tab="erfassen">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>
+          <span>Erfassen</span></a>
+        <a href="#uebersicht" data-tab="uebersicht">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          <span>Übersicht</span></a>
+        <a href="#kalender" data-tab="kalender">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span>Kalender</span></a>
+        <a href="#tasks" data-tab="tasks">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v12"/></svg>
+          <span>Tasks</span></a>
+        <a href="#dateien" data-tab="dateien">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h3M14 2v6h6M14 2l6 6v2"/><rect x="13" y="16" width="8" height="6" rx="1"/><path d="M15 16v-2a2 2 0 0 1 4 0v2"/></svg>
+          <span>Dateien</span>
+          <span id="nav-locks" class="nav-count" title="Gesperrte Dateien" hidden></span></a>
       </nav>
       <div class="user">
         <span id="user-dot" class="dot"></span>
@@ -68,8 +84,9 @@
         <select id="demo-user" title="Demo: Person wechseln" hidden></select>
         <button id="logout-btn" class="btn ghost small">Abmelden</button>
       </div>
-    </header>
+    </aside>
 
+    <div class="content">
     <div id="demo-banner" class="banner" hidden>
       <span><b>Demo-Modus:</b> Beispieldaten, nur in diesem Browser gespeichert. Für die echte Datenbank Supabase in <code>js/config.js</code> eintragen.</span>
       <button id="demo-reset" class="btn ghost small">Beispieldaten zurücksetzen</button>
@@ -78,6 +95,7 @@
     <main>
       <!-- Erfassen -->
       <section id="view-erfassen" class="view" hidden>
+        <header class="page-head"><h1>Zeit erfassen</h1></header>
         <div class="grid erfassen-grid">
           <div class="card timer-card">
             <img src="img/logo.png" alt="" class="mascot">
@@ -144,7 +162,8 @@
 
       <!-- Übersicht -->
       <section id="view-uebersicht" class="view" hidden>
-        <div class="card filters">
+        <header class="page-head"><h1>Übersicht</h1></header>
+        <div class="filters">
           <label class="field">Zeitraum
             <select id="f-period">
               <option value="month" selected>Dieser Monat</option>
@@ -166,7 +185,7 @@
           <label class="field">Tags
             <select id="f-tag"></select>
           </label>
-          <button id="csv-btn" class="btn ghost">CSV exportieren</button>
+          <button id="csv-btn" class="btn">CSV exportieren</button>
         </div>
 
         <div class="grid two">
@@ -201,13 +220,14 @@
 
       <!-- Kalender -->
       <section id="view-kalender" class="view" hidden>
+        <header class="page-head">
+          <h1>Kalender</h1>
+          <button id="event-new" class="btn primary create">+ Termin</button>
+        </header>
         <div class="grid kalender-grid">
           <div class="card">
-            <div class="card-head">
-              <h2>Gemeinsame Termine</h2>
-              <button id="event-new" class="btn primary small">+ Termin</button>
-            </div>
             <div id="calendar"></div>
+            <p class="muted small calendar-hint">Umrandete Einträge sind offene Tasks mit Fälligkeit. Ein Klick öffnet den Task.</p>
           </div>
           <aside class="card">
             <h2>Nächste Termine</h2>
@@ -218,42 +238,82 @@
 
       <!-- Tasks: Kanban-Board oder Liste -->
       <section id="view-tasks" class="view" hidden>
-        <div class="tasks-toolbar">
-          <button type="button" id="tasks-mine" class="chip" aria-pressed="false">Nur meine</button>
-          <div id="tasks-view-toggle" class="segmented" role="group" aria-label="Ansicht">
-            <button type="button" data-view="board" aria-pressed="true">Board</button>
-            <button type="button" data-view="list" aria-pressed="false">Liste</button>
-          </div>
-        </div>
-        <!-- "+ Task" steht auf breiten Bildschirmen links neben dem Board, sonst darüber -->
-        <div class="tasks-main">
+        <!-- Der Umschalter Board/Liste steht immer ganz rechts, egal was daneben ein- oder ausgeblendet ist -->
+        <header class="page-head">
+          <h1>Tasks</h1>
           <button type="button" id="task-new" class="btn primary create">+ Task</button>
+          <div class="page-actions">
+            <button type="button" id="tasks-mine" class="chip" aria-pressed="false">Nur meine</button>
+            <div id="tasks-view-toggle" class="segmented" role="group" aria-label="Ansicht">
+              <button type="button" data-view="board" aria-pressed="true">Board</button>
+              <button type="button" data-view="list" aria-pressed="false">Liste</button>
+            </div>
+          </div>
+        </header>
+        <div class="tasks-main">
           <div id="board" class="kanban"></div>
-          <form id="task-filters" class="card filters" hidden>
-          <label class="field">Suche
-            <input type="search" name="q" placeholder="Titel, Beschreibung …">
-          </label>
-          <label class="field">Zuständig
-            <select name="person"></select>
-          </label>
-          <label class="field">Kategorie
-            <select name="category"></select>
-          </label>
-          <label class="field">Priorität
-            <select name="priority"></select>
-          </label>
-          <label class="field">Spalte
-            <select name="status"></select>
-          </label>
-        </form>
-        <div id="task-list" class="card" hidden></div>
+          <form id="task-filters" class="task-filters" hidden>
+            <label class="field">Suche
+              <input type="search" name="q" placeholder="Titel, Beschreibung …">
+            </label>
+            <fieldset class="field">
+              <legend>Zuständig</legend>
+              <div class="chips" data-filter="person"></div>
+            </fieldset>
+            <fieldset class="field">
+              <legend>Kategorie</legend>
+              <div class="chips" data-filter="category"></div>
+            </fieldset>
+            <fieldset class="field">
+              <legend>Priorität</legend>
+              <div class="chips" data-filter="priority"></div>
+            </fieldset>
+            <fieldset class="field">
+              <legend>Spalte</legend>
+              <div class="chips" data-filter="status"></div>
+            </fieldset>
+            <button type="button" id="task-filters-reset" class="link-btn small" hidden>Filter zurücksetzen</button>
+          </form>
+          <div id="task-list" class="card" hidden></div>
         </div>
         <p class="muted small board-hint">
           <span class="hint-mouse">Auf eine freie Stelle klicken, um dort einen Task anzulegen. Karten per Drag &amp; Drop verschieben.</span>
           <span class="hint-touch">Freie Stelle antippen für einen neuen Task, Karte antippen zum Bearbeiten oder Verschieben.</span>
         </p>
       </section>
+
+      <!-- Dateien: Wer arbeitet gerade woran im Unreal-Projekt -->
+      <section id="view-dateien" class="view" hidden>
+        <header class="page-head"><h1>Dateien</h1></header>
+        <div class="grid dateien-grid">
+          <form id="lock-form" class="card" novalidate>
+            <h2>Datei sperren</h2>
+            <p class="muted small">Trag ein, woran du im Unreal-Projekt gerade arbeitest. So ändert niemand dieselbe Datei gleichzeitig.</p>
+            <label class="field"><span>Dateien oder Ordner <span class="muted">(ein Pfad pro Zeile, Ordner mit / am Ende)</span></span>
+              <textarea name="paths" rows="3" placeholder="Content/Maps/Level2.umap" aria-describedby="lock-error"></textarea>
+            </label>
+            <p id="lock-error" class="error-text field-error" hidden></p>
+            <label class="field"><span>Notiz <span class="muted">(optional)</span></span>
+              <input name="note" maxlength="200" placeholder="z. B. Beleuchtung im Keller">
+            </label>
+            <button type="submit" class="btn primary">Sperren</button>
+          </form>
+
+          <div class="card">
+            <div class="card-head">
+              <h2>Gerade gesperrt</h2>
+              <span id="locks-status" class="muted small" aria-live="polite"></span>
+            </div>
+            <div class="lock-tools">
+              <input type="search" id="lock-search" placeholder="Pfad suchen …" aria-label="Gesperrte Pfade durchsuchen">
+              <button type="button" id="locks-release-mine" class="btn ghost small" hidden>Alle meine freigeben</button>
+            </div>
+            <div id="lock-list"></div>
+          </div>
+        </div>
+      </section>
     </main>
+    </div>
   </div>
 
   <dialog id="event-dialog">

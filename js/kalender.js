@@ -1,13 +1,13 @@
 // Tab "Kalender": gemeinsame Termine mit FullCalendar (global per <script> geladen).
 
-import { $, confirmDialog, esc, fmtDate, formState, guardDialog, hhmm, isoDate, toast } from './util.js';
+import { $, confirmDialog, esc, fmtDate, formState, guardDialog, hhmm, icon, isoDate, toast } from './util.js';
 
 const HOUR_MS = 60 * 60 * 1000;
 const UPCOMING_COUNT = 5;
 const EVENT_COLOR = '#8ec5ff';
 
 // Kalendertage addieren (nicht 24 h, sonst stimmt es bei der Zeitumstellung nicht)
-function addDays(date, days) {
+export function addDays(date, days) {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
   return d;
@@ -79,7 +79,7 @@ function renderUpcoming(rows) {
 }
 
 // "Di., 17.11.2026", "Di., 17.11.2026, 18:00" oder "23.10. – 25.10.2026"
-function eventWhen(r) {
+export function eventWhen(r) {
   const start = new Date(r.starts_at);
   if (r.all_day) {
     const last = r.ends_at ? addDays(new Date(r.ends_at), -1) : start;
@@ -92,7 +92,7 @@ function eventWhen(r) {
 }
 
 // "läuft", "heute", "morgen", "in 27 Tagen"
-function countdown(r, now) {
+export function countdown(r, now) {
   const start = new Date(r.starts_at);
   if (start <= now) return 'läuft';
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -126,9 +126,10 @@ function createCalendar() {
     dayMaxEvents: true,
     eventTimeFormat: { hour: '2-digit', minute: '2-digit' },
     slotMinTime: '07:00:00',
+    // Termine und offene Tasks mit Fälligkeit in einem Abruf
     events: (info, success, failure) => {
-      ctx.db.listEvents().then((rows) => {
-        success(rows.map(toCalendarEvent));
+      Promise.all([ctx.db.listEvents(), ctx.db.listCards()]).then(([rows, cards]) => {
+        success([...rows.map(toCalendarEvent), ...dueTasks(cards).map(toTaskEvent)]);
         renderUpcoming(rows);
       }).catch((err) => {
         ctx.fail(err);
@@ -149,8 +150,14 @@ function createCalendar() {
     },
     eventClick: (info) => {
       info.jsEvent.preventDefault();
-      openDialog(info.event.extendedProps.row);
+      const { row, taskId } = info.event.extendedProps;
+      if (taskId) ctx.openTask(taskId);
+      else openDialog(row);
     },
+    // Fällige Tasks mit Icon davor, damit sie nicht wie Termine aussehen
+    eventContent: (arg) => (arg.event.extendedProps.taskId
+      ? { html: `<span class="task-due-label">${icon('checklist')} ${esc(arg.event.title)}</span>` }
+      : true),
     eventDrop: moveEvent,
     eventResize: moveEvent,
   });
@@ -167,14 +174,34 @@ function toCalendarEvent(row) {
     allDay: row.all_day,
     backgroundColor: EVENT_COLOR,
     borderColor: EVENT_COLOR,
-    textColor: '#1c1c23', // dunkle Schrift auf den Pastellfarben
+    textColor: '#16171e', // dunkle Schrift auf den Pastellfarben
     classNames: row.is_milestone ? ['milestone'] : [],
     extendedProps: { row },
   };
 }
 
+// Offene Tasks mit Fälligkeitsdatum (erledigte gehören nicht mehr in den Kalender)
+export function dueTasks(cards) {
+  return cards.filter((c) => c.due_date && c.status !== 'done');
+}
+
+// Fälliger Task als ganztägiger Eintrag: umrandet statt gefüllt, nicht verschiebbar
+// (das Datum ändert man im Task). Ein Klick öffnet den Task.
+function toTaskEvent(card) {
+  const overdue = card.due_date < isoDate();
+  return {
+    id: `task-${card.id}`,
+    title: card.title,
+    start: card.due_date,
+    allDay: true,
+    editable: false,
+    classNames: ['task-due', ...(overdue ? ['overdue'] : [])],
+    extendedProps: { taskId: card.id },
+  };
+}
+
 // Link, der den Termin im eigenen Google Kalender anlegt (mit dessen Erinnerungen aufs Handy)
-function googleCalendarUrl(row) {
+export function googleCalendarUrl(row) {
   const utc = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const day = (d) => isoDate(d).replace(/-/g, '');
   const start = new Date(row.starts_at);

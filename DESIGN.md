@@ -5,13 +5,14 @@ colors:
   polarlicht-blau: "#8ec5ff"
   polarlicht-tief: "#5b8def"
   polarlicht-hell: "#c2e0ff"
-  nachtgrund: "#131318"
-  werkbank: "#1c1c23"
-  ablage: "#26262f"
-  naht: "#33333e"
-  kreide: "#ececf1"
+  leiste: "#111218"
+  nachtgrund: "#16171e"
+  werkbank: "#1e2029"
+  ablage: "#2a2c38"
+  naht: "#353846"
+  kreide: "#edeef3"
   schnee: "#ffffff"
-  staub: "#9a9aa7"
+  staub: "#a0a2b1"
   schleier: "rgb(0 0 0 / 0.4)"
   schleier-dicht: "rgb(0 0 0 / 0.6)"
   signalrot: "#f06a7e"
@@ -120,15 +121,14 @@ components:
     typography: "{typography.chip}"
     rounded: "{rounded.pill}"
     padding: "3px 10px"
-  nav-tab:
-    textColor: "{colors.kreide}"
-    rounded: "{rounded.pill}"
-    padding: "6px 14px"
-  nav-tab-active:
-    backgroundColor: "{colors.polarlicht-blau}"
-    textColor: "{colors.nachtgrund}"
-    rounded: "{rounded.pill}"
-    padding: "6px 14px"
+  nav-item:
+    textColor: "{colors.staub}"
+    rounded: "{rounded.sm}"
+    padding: "8px 10px"
+  nav-item-active:
+    textColor: "{colors.schnee}"
+    rounded: "{rounded.sm}"
+    padding: "8px 10px"
   kanban-card:
     backgroundColor: "{colors.ablage}"
     rounded: "{rounded.sm}"
@@ -172,14 +172,15 @@ Eine dunkle, leicht violettstichige Graustufen-Werkbank mit einem kühlen blauen
 - **Tag- und Personenfarben** kommen aus der Datenbank und erscheinen nur als Chip-Tönung, Balken oder Punkt.
 
 ### Neutral
-- **Nachtgrund** (#131318): Seitenhintergrund und Text auf hellen Flächen.
-- **Werkbank** (#1c1c23): Karten, Kopfzeile, Dialoge, Eingabefelder.
-- **Ablage** (#26262f): zweite Ebene: sekundäre Knöpfe, Kanban-Karten, Hover-Flächen, leere Balkenspur.
-- **Naht** (#33333e): alle Rahmen und Trennlinien, 1px.
-- **Kreide** (#ececf1): Haupttext.
+- **Leiste** (#111218): die Seitenleiste, die dunkelste Fläche.
+- **Nachtgrund** (#16171e): Seitenhintergrund und Text auf hellen Flächen.
+- **Werkbank** (#1e2029): Karten, Kanban-Spalten, Dialoge, Eingabefelder.
+- **Ablage** (#2a2c38): zweite Ebene: sekundäre Knöpfe, Kanban-Karten, Hover-Flächen, leere Balkenspur.
+- **Naht** (#353846): Rahmen von Feldern, Dialogen und Kanban-Karten sowie Trennlinien, 1px. Karten haben keinen Rahmen.
+- **Kreide** (#edeef3): Haupttext.
 - **Schnee** (#ffffff): höchste Betonung: Wortmarke, Reiter beim Überfahren, Text auf Signalrot und auf dunklen Bild-Knöpfen.
 - **Schleier** (40 % Schwarz) und **Schleier-dicht** (60 % Schwarz): hinter Dialogen bzw. unter Knöpfen, die auf Bildern liegen.
-- **Staub** (#9a9aa7): Nebentext, Beschriftungen, inaktive Chips (Kontrast 6:1 auf Werkbank).
+- **Staub** (#a0a2b1): Nebentext, Beschriftungen, inaktive Chips (Kontrast 6:1 auf Werkbank).
 - **Signalrot** (#f06a7e): Löschen, Fehler, Überfälliges, Jetzt-Linie im Kalender.
 
 ### Named Rules
@@ -215,15 +216,15 @@ Eine dunkle, leicht violettstichige Graustufen-Werkbank mit einem kühlen blauen
 
 ## Layout
 
-Ein zentrierter Arbeitsbereich (max. 1100px, 24px Rand) unter einer klebenden Kopfzeile mit Wortmarke links, Reitern mittig und Person rechts. Jede Ansicht ist eine senkrechte Folge von Karten mit 16px Abstand. Erfassen teilt sich in Timer (300px) und Formular; die Übersicht stellt zwei Karten nebeneinander; der Kalender hat rechts eine 280px-Spalte „Nächste Termine“. Das Kanban ist ein Raster aus vier Status-Spalten (je min. 220px) mal Kategorie-Zeilen, getrennt durch beschriftete Farblinien.
+Links eine feste Seitenleiste (232px, Leiste-Ton) mit Wortmarke oben, den Bereichen darunter und der Person unten. Rechts der Arbeitsbereich (max. 1240px, 32px Rand). Jede Ansicht beginnt mit dem Seitentitel in Unbounded (1.35rem); die Hauptaktion steht direkt daneben („+ Task“, „+ Termin“), Umschalter und Filter immer ganz rechts. Darunter folgen Karten mit 16px Abstand; Filterzeilen liegen ohne Karte direkt auf dem Nachtgrund. Erfassen teilt sich in Timer (320px) und Formular; die Übersicht stellt zwei Karten nebeneinander; der Kalender hat rechts eine 280px-Spalte „Nächste Termine“; Dateien teilt sich in Formular (340px) und Liste. Das Kanban ist ein Raster aus vier Status-Spalten (je min. 220px) mal Kategorie-Zeilen, getrennt durch beschriftete Farblinien.
 
 Abstände folgen einem 4px-Raster (4, 8, 12, 16, 20, 24); Formularfelder stehen 14px auseinander, Fehlermeldungen und Vorschläge rücken mit -8px an ihr Feld heran.
 
-Responsiv: unter 1000px wandern die Reiter in eine eigene Zeile, der Kalender wird einspaltig und das Board wischt seitlich (Spalten bis 80vw, Einrasten). Unter 800px werden alle Zweispalter einspaltig, unter 640px schrumpfen Ränder auf 16px.
+Responsiv: unter 1200px wird der Kalender einspaltig und das Board wischt seitlich (Spalten bis 80vw, Einrasten). Unter 1000px werden alle Zweispalter einspaltig. Unter 860px wird die Seitenleiste zur Kopfzeile mit den Bereichen als Reihe darunter; unter 640px stehen Icon und Name der Bereiche übereinander und die Kopfzeile scrollt mit.
 
 ## Elevation & Depth
 
-Die Werkstatt ist flach. Es gibt keine Schatten zur Erhöhung (`--shadow: none`); Tiefe entsteht nur durch Tonstufen: Nachtgrund → Werkbank → Ablage, jeweils mit einer 1px-Naht abgesetzt. Dialoge liegen über einem 40 % schwarzen Schleier.
+Die Werkstatt ist flach. Es gibt keine Schatten zur Erhöhung (`--shadow: none`); Tiefe entsteht nur durch Tonstufen: Leiste → Nachtgrund → Werkbank → Ablage. Karten setzen sich allein durch den Ton ab, ohne Rahmenlinie; das hält die Seite leicht. Dialoge liegen über einem 40 % schwarzen Schleier.
 
 Die einzigen Schatten sind Funktionen, keine Höhen: die 3px-Einfügemarke in Polarlicht-Blau beim Ziehen von Karten und das Leuchten der Meilensteine.
 
@@ -255,8 +256,8 @@ Ruhig und präzise: flach, 8px Rundung, Systemschrift 500.
 - **Corner Style:** 12px.
 - **Background:** Werkbank auf Nachtgrund.
 - **Shadow Strategy:** keine (siehe Elevation & Depth).
-- **Border:** 1px Naht.
-- **Internal Padding:** 20px (16px auf dem Handy).
+- **Border:** keiner; der Ton reicht.
+- **Internal Padding:** 24px (16px auf dem Handy).
 
 ### Inputs / Fields
 - **Style:** Werkbank-Fläche, 1px Naht, 8px Rundung, einheitlich 40px hoch; Beschriftung darüber in Label-Schrift.
@@ -264,7 +265,7 @@ Ruhig und präzise: flach, 8px Rundung, Systemschrift 500.
 - **Error:** Signalrot-Rand am Feld, Meldung direkt darunter in Signalrot, alle Fehler gleichzeitig.
 
 ### Navigation
-Pillen-Reiter mittig in der Kopfzeile, Systemschrift 500 in hellem Grau. Hover: Ablage-Fläche und Weiss. Aktiv: Polarlicht-Blau mit Nachtgrund-Text (einfarbig, kein Verlauf). Auf schmalen Bildschirmen füllen die Reiter eine eigene Zeile zu gleichen Teilen.
+Die Bereiche stehen untereinander in der Seitenleiste: Strich-Icon (18px) und Name, Systemschrift 500 in Staub, 8px Rundung. Hover: Werkbank-Fläche und Kreide. Aktiv: 16 % Polarlicht-Blau als Fläche, Text in Schnee, Icon in Polarlicht-Blau (getönt statt voll gefüllt, kein Verlauf). Eine Zahl hinter dem Namen (Ablage-Pille) zeigt z. B. die gesperrten Dateien. Auf schmalen Bildschirmen füllen die Bereiche eine eigene Zeile zu gleichen Teilen.
 
 ### Dialoge
 Werkbank-Fläche mit Naht und 12px Rundung über einem 40 % schwarzen Schleier, Titel als randloses Eingabefeld in Unbounded. Die Knopfzeile (Speichern, Löschen, Abbrechen) klebt unten mit einer Naht darüber, damit „Speichern“ auch in langen Dialogen sichtbar bleibt. Esc, Abbrechen oder ein Klick daneben schliessen sofort, wenn nichts geändert wurde; sonst fragt der eigene Bestätigungsdialog „Ungespeicherte Änderungen verwerfen?“ („Abbrechen“ vorausgewählt). Löschen fragt immer im selben Bestätigungsdialog nach, nie im Browser-Standard.
@@ -282,7 +283,7 @@ Spalten wirken wie hohe Karten aus Kopf, Zellen und Fuss in Werkbank; dazwischen
 
 ### Do:
 - **Do** Polarlicht-Blau (#8ec5ff) nur für die Hauptaktion, den aktuellen Zustand und den Fokus verwenden.
-- **Do** Tiefe mit den drei Tonstufen (#131318, #1c1c23, #26262f) und 1px-Nähten (#33333e) erzeugen.
+- **Do** Tiefe mit den drei Tonstufen (#16171e, #1e2029, #2a2c38) und 1px-Nähten (#353846) erzeugen.
 - **Do** Unbounded auf Titel, Spalten-, Swimlane-Namen und die Wortmarke beschränken.
 - **Do** für Zeiten und Summen tabellarische Ziffern nutzen.
 - **Do** Icons als einheitliche Strich-Icons (24er-Raster, Strich 2, runde Enden) zeichnen; der ★ bleibt das einzige Textzeichen, und nur beim Meilenstein.

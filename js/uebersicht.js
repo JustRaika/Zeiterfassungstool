@@ -50,18 +50,22 @@ function fillSelect(sel, allLabel, options) {
   if (options.some(([v]) => v === prev)) el.value = prev;
 }
 
-// Gewählter Zeitraum als [von, bis] (ISO-Daten, jeweils inklusive, '' = offen)
-function periodRange() {
-  const now = new Date();
+// Zeitraum als [von, bis] (ISO-Daten, jeweils inklusive, '' = offen).
+// period: Wert der Auswahl; custom: [von, bis] für "Eigener Zeitraum"
+export function rangeFor(period, now, custom = ['', '']) {
   const y = now.getFullYear();
   const m = now.getMonth();
-  switch ($('#f-period').value) {
+  switch (period) {
     case 'month': return [isoDate(new Date(y, m, 1)), isoDate(new Date(y, m + 1, 0))];
     case 'lastmonth': return [isoDate(new Date(y, m - 1, 1)), isoDate(new Date(y, m, 0))];
     case 'year': return [`${y}-01-01`, `${y}-12-31`];
-    case 'custom': return [$('#f-from').value, $('#f-to').value];
+    case 'custom': return custom;
     default: return ['', ''];
   }
+}
+
+function periodRange() {
+  return rangeFor($('#f-period').value, new Date(), [$('#f-from').value, $('#f-to').value]);
 }
 
 function filtered() {
@@ -97,7 +101,7 @@ function barRow(labelHtml, fraction, color, valueHtml, extraHtml = '', selected 
 }
 
 // Minuten pro Tag; Einträge mit mehreren Tags zählen bei jedem Tag voll
-function tagSums(entries) {
+export function tagSums(entries) {
   const sums = new Map();
   for (const e of entries) {
     for (const t of e.tags.length ? e.tags : ['(ohne Tag)']) {
@@ -165,14 +169,16 @@ function renderTable(list) {
   }).join('');
 }
 
+// Ein Wert als CSV-Zelle (Trennzeichen ";")
+export function csvCell(v) {
+  let s = String(v ?? '');
+  // Text, der mit = + - @ beginnt, würde Excel als Formel ausführen: mit ' entschärfen
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 function exportCsv() {
   const { list } = filtered();
-  const cell = (v) => {
-    let s = String(v ?? '');
-    // Text, der mit = + - @ beginnt, würde Excel als Formel ausführen: mit ' entschärfen
-    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-    return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
   const lines = [
     ['Datum', 'Person', 'GitHub', 'Minuten', 'Stunden', 'Tags', 'Kommentar'],
     ...list.map((e) => [
@@ -184,7 +190,7 @@ function exportCsv() {
       e.tags.join(', '),
       e.comment || '',
     ]),
-  ].map((row) => row.map(cell).join(';'));
+  ].map((row) => row.map(csvCell).join(';'));
 
   // BOM + Semikolon, damit Excel (deutsch) Umlaute und Spalten richtig erkennt
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });

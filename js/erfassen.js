@@ -171,19 +171,19 @@ function segments() {
     ({ start: new Date(s.start), end: s.end ? new Date(s.end) : null, stop: !!s.stop }));
 }
 
-function timerState(segs) {
+export function timerState(segs) {
   if (!segs.length) return 'idle';
   const last = segs.at(-1);
   if (!last.end) return 'running';
   return last.stop ? 'stopped' : 'paused';
 }
 
-function workMs(segs, now = Date.now()) {
+export function workMs(segs, now = Date.now()) {
   return segs.reduce((sum, s) => sum + ((s.end || now) - s.start), 0);
 }
 
 // 3725000 -> "1:02:05"
-function fmtClock(ms) {
+export function fmtClock(ms) {
   const secs = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(secs / 3600);
   const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
@@ -192,7 +192,7 @@ function fmtClock(ms) {
 }
 
 // Dauer für die Stempel-Liste: "45 s", "12 min", "1 h 30 min"
-function fmtSpan(ms) {
+export function fmtSpan(ms) {
   return ms < 60000 ? `${Math.max(0, Math.round(ms / 1000))} s` : fmtDuration(Math.round(ms / 60000));
 }
 

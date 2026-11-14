@@ -96,6 +96,7 @@ class SupabaseDb {
       const page = check(await this.sb.from('time_entries').select('*')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
+        .order('id') // eindeutige Reihenfolge, sonst kann beim Blättern ein Eintrag doppelt oder gar nicht kommen
         .range(from, from + PAGE_SIZE - 1));
       rows.push(...page);
       if (page.length < PAGE_SIZE) return rows;
@@ -164,12 +165,33 @@ class SupabaseDb {
   async deleteImages(paths) {
     if (paths.length) check(await this.sb.storage.from(IMAGE_BUCKET).remove(paths));
   }
+
+  // Datei-Sperren (Tab "Dateien")
+  async listLocks() {
+    return check(await this.sb.from('file_locks').select('*').order('locked_at', { ascending: false }));
+  }
+
+  // rows: [{ path, note }]; gesperrt wird immer für die eingeloggte Person
+  async addLocks(rows) {
+    return check(await this.sb.from('file_locks').insert(rows).select());
+  }
+
+  async deleteLocks(ids) {
+    if (ids.length) check(await this.sb.from('file_locks').delete().in('id', ids));
+  }
+
+  // Meldet jede Änderung an den Sperren sofort (Supabase Realtime). onStatus(true/false): Verbindung steht.
+  onLocksChange(onChange, onStatus) {
+    this.sb.channel('file-locks')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'file_locks' }, onChange)
+      .subscribe((status) => onStatus(status === 'SUBSCRIBED'));
+  }
 }
 
 // ---------------------------------------------------------------------
 // Demo (localStorage)
 // ---------------------------------------------------------------------
-const DEMO_KEY = 'fourcast-zeit-demo-v7';
+const DEMO_KEY = 'fourcast-zeit-demo-v8';
 const DEMO_USER_KEY = 'fourcast-zeit-demo-user';
 
 const DEMO_TAGS = [
@@ -237,22 +259,31 @@ function seedDemo() {
     { title: 'Weekly Sync', starts_at: at(-5, 18), ends_at: at(-5, 19), all_day: false, location: 'Discord', created_by: 'demo-jo' },
   ].map((e) => ({ id: crypto.randomUUID(), description: null, created_at: new Date().toISOString(), ...e }));
 
+  // Letzter Wert: fällig in so vielen Tagen (null = ohne Datum)
   const cards = [
-    ['backlog', 'Ideen für Level 4 sammeln', [], ['Woahbuilding'], 3, 'design', []],
+    ['backlog', 'Ideen für Level 4 sammeln', [], ['Woahbuilding'], 3, 'design', [], null],
     ['todo', 'Steam-Page Texte schreiben', ['demo-robin', 'demo-jo'], ['Social Media'], 1, 'admin',
-      [['Kurzbeschreibung', true], ['Features auflisten', false], ['Screenshots auswählen', false]]],
-    ['todo', 'Hauptmenü-Musik', ['demo-robin'], ['Sound'], 2, 'design', []],
+      [['Kurzbeschreibung', true], ['Features auflisten', false], ['Screenshots auswählen', false]], 6],
+    ['todo', 'Hauptmenü-Musik', ['demo-robin'], ['Sound'], 2, 'design', [], 12],
     ['doing', 'Puzzle-Mechanik Spiegel', ['demo-alex'], ['Coding', 'Puzzle Cooking'], 1, 'code',
-      [['Prototyp', true], ['Kollisionen', true], ['Feinschliff', false]]],
-    ['doing', 'Bugs im Level 2 prüfen', ['demo-sam', 'demo-kim'], ['Testing'], 2, 'testing', []],
-    ['done', 'Teamvertrag aufsetzen', ['demo-jo'], ['Organisation'], 2, 'admin', []],
-  ].map(([status, title, assignees, cardTags, priority, category, subtasks], i) => ({
+      [['Prototyp', true], ['Kollisionen', true], ['Feinschliff', false]], 3],
+    ['doing', 'Bugs im Level 2 prüfen', ['demo-sam', 'demo-kim'], ['Testing'], 2, 'testing', [], -1],
+    ['done', 'Teamvertrag aufsetzen', ['demo-jo'], ['Organisation'], 2, 'admin', [], null],
+  ].map(([status, title, assignees, cardTags, priority, category, subtasks, dueIn], i) => ({
     id: crypto.randomUUID(), status, title, assignees, tags: cardTags, priority, category, position: i,
-    subtasks: subtasks.map(([t, done]) => ({ title: t, done })),
-    description: null, due_date: null, created_by: 'demo-jo', created_at: new Date().toISOString(),
+    subtasks: subtasks.map(([t, done]) => ({ title: t, done })), images: [],
+    description: null, created_by: 'demo-jo', created_at: new Date().toISOString(),
+    due_date: dueIn === null ? null : isoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + dueIn)),
   }));
 
-  return { members, tags, entries, events, cards };
+  const minutesAgo = (min) => new Date(Date.now() - min * 60_000).toISOString();
+  const locks = [
+    ['Content/Maps/Level2.umap', 'demo-kim', 'Beleuchtung im Keller', 25],
+    ['Content/Characters/Hero/', 'demo-sam', 'Neue Animationen', 190],
+    ['Content/Blueprints/BP_MirrorPuzzle.uasset', 'demo-alex', null, 60 * 26],
+  ].map(([path, locked_by, note, ago]) => ({ id: crypto.randomUUID(), path, locked_by, note, locked_at: minutesAgo(ago) }));
+
+  return { members, tags, entries, events, cards, locks };
 }
 
 class DemoDb {
@@ -370,9 +401,7 @@ class DemoDb {
   }
 
   async listCards() {
-    return structuredClone(this.data.cards || [])
-      .map((c) => ({ images: [], ...c }))
-      .sort((a, b) => a.position - b.position);
+    return structuredClone(this.data.cards).sort((a, b) => a.position - b.position);
   }
 
   async addCard(card) {
@@ -381,7 +410,7 @@ class DemoDb {
       assignees: [], subtasks: [], images: [],
       tags: [], due_date: null, created_by: this.user, created_at: new Date().toISOString(), ...card,
     };
-    (this.data.cards ||= []).push(row);
+    this.data.cards.push(row);
     this.save();
     return structuredClone(row);
   }
@@ -419,5 +448,37 @@ class DemoDb {
   async deleteImages(paths) {
     for (const p of paths) delete this.data.images?.[p];
     this.save();
+  }
+
+  async listLocks() {
+    return structuredClone(this.data.locks).sort((a, b) => b.locked_at.localeCompare(a.locked_at));
+  }
+
+  async addLocks(rows) {
+    const taken = rows.find((r) => this.data.locks.some((l) => l.path.toLowerCase() === r.path.toLowerCase()));
+    if (taken) throw new Error(`duplicate key: ${taken.path}`);
+    const added = rows.map((r) => ({
+      id: crypto.randomUUID(), note: null, locked_by: this.user, locked_at: new Date().toISOString(), ...r,
+    }));
+    this.data.locks.push(...added);
+    this.save();
+    return structuredClone(added);
+  }
+
+  // Wie in der Datenbank: eigene Sperren, als Admin alle; fremde bleiben einfach stehen
+  async deleteLocks(ids) {
+    const isAdmin = this.data.members.find((m) => m.github_username === this.user)?.is_admin;
+    this.data.locks = this.data.locks.filter((l) => !ids.includes(l.id) || (l.locked_by !== this.user && !isAdmin));
+    this.save();
+  }
+
+  // Demo: Änderungen aus einem anderen Tab desselben Browsers übernehmen
+  onLocksChange(onChange, onStatus) {
+    window.addEventListener('storage', (e) => {
+      if (e.key !== DEMO_KEY || !e.newValue) return;
+      try { this.data = JSON.parse(e.newValue); } catch { return; }
+      onChange();
+    });
+    onStatus(true);
   }
 }

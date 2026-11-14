@@ -29,10 +29,11 @@ Ein schlankes, selbst gebautes Teamwerkzeug statt eines generischen SaaS-Produkt
 
 - **Erfassen:** Start/Stop-Timer oder manuelle Eingabe, Tags (mehrere möglich), Pflichtkommentar, letzte eigene Einträge.
 - **Übersicht:** alle Einträge als Tabelle, filterbar nach Zeitraum, Person und Tag; Anteile pro Person; Zeit nach Tags; CSV-Export.
-- **Kalender:** gemeinsame Termine in Monats-, Wochen- und Listenansicht; neue Termine per Klick auf einen Tag, verschieben per Drag & Drop.
-- **Tasks:** Kanban-Board und Listenansicht; Kategorien code, design, admin, testing (Pflicht); Bilder anhängen.
+- **Kalender:** gemeinsame Termine in Monats-, Wochen- und Listenansicht; neue Termine per Klick auf einen Tag, verschieben per Drag & Drop. Offene Tasks mit Fälligkeit erscheinen umrandet; ein Klick öffnet den Task.
+- **Tasks:** Kanban-Board und Listenansicht (Filter als Chips); Kategorien code, design, admin, testing (Pflicht); Bilder anhängen.
+- **Dateien:** Liste, wer gerade an welcher Datei oder welchem Ordner im Unreal-Projekt arbeitet (eine Absprache, keine technische Sperre). Aktualisiert sich live über Supabase Realtime, zusätzlich jede Minute.
 - Rechte: Alle sehen alle Einträge; ändern und löschen dürfen nur die eigenen, der Admin darf alle.
-- Technik: Statische Seite (HTML, CSS, JavaScript ohne Build-Schritt) auf GitHub Pages; Daten, Login und Bild-Speicher über Supabase. Ohne Zugangsdaten in `js/config.js` läuft lokal ein Demo-Modus mit Beispieldaten. Diese Einfachheit (kein Build, kein Framework) ist gewollt.
+- Technik: Statische Seite (HTML, CSS, JavaScript ohne Build-Schritt) auf GitHub Pages; Daten, Login und Bild-Speicher über Supabase. Ohne Zugangsdaten in `js/config.js` läuft lokal ein Demo-Modus mit Beispieldaten. Diese Einfachheit (kein Build, kein Framework) ist gewollt. Die Rechenlogik ist mit Tests abgesichert (`node --test`, laufen bei jedem Push).
 - Sprache der Oberfläche: Deutsch.
 
 ## Brand Commitments

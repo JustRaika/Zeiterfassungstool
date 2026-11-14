@@ -6,8 +6,9 @@ import * as erfassen from './erfassen.js';
 import * as uebersicht from './uebersicht.js';
 import * as kalender from './kalender.js';
 import * as kanban from './kanban.js';
+import * as dateien from './dateien.js';
 
-const VIEWS = { erfassen, uebersicht, kalender, tasks: kanban };
+const VIEWS = { erfassen, uebersicht, kalender, tasks: kanban, dateien };
 const REFRESH_AFTER_MS = 60_000;
 
 // Gemeinsamer Zustand, den alle Ansichten bekommen.
@@ -63,6 +64,12 @@ const ctx = {
     location.hash = '#erfassen';
     erfassen.editEntry(entry, 'uebersicht');
   },
+
+  // Task im Tasks-Tab öffnen (wird aus dem Kalender aufgerufen)
+  openTask(id) {
+    location.hash = '#tasks';
+    kanban.openTask(id);
+  },
 };
 
 function showScreen(id) {
@@ -78,6 +85,7 @@ function showTab() {
 
   for (const a of document.querySelectorAll('.tabs a')) {
     a.classList.toggle('active', a.dataset.tab === tab);
+    if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   }
   for (const key of Object.keys(VIEWS)) {
     $(`#view-${key}`).hidden = key !== tab;

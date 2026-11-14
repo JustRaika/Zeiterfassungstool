@@ -45,8 +45,9 @@ let cardGuard; // fragt vor dem Verwerfen ungespeicherter Änderungen nach
 let draggedId = null;
 let view = loadView(); // 'board' | 'list'
 let onlyMine = loadMine(); // "Nur meine" (nur Board; die Liste hat ihren Filter "Zuständig")
-// Filter der Listenansicht ('' = alle)
-let filters = { q: '', person: '', category: '', priority: '', status: '' };
+// Filter der Listenansicht: Suchtext und je Gruppe die angewählten Chips (nichts angewählt = alle)
+const NOBODY = '-'; // Chip "Niemand" bei Zuständig
+const filters = { q: '', person: new Set(), category: new Set(), priority: new Set(), status: new Set() };
 
 // Gewählte Ansicht pro Browser merken (falls localStorage nicht geht: einfach Board)
 function loadView() {
@@ -271,6 +272,14 @@ function openCard(el) {
   openDialog(cards.find((c) => c.id === el.dataset.id));
 }
 
+// Task anhand der ID öffnen (aus dem Kalender: Klick auf einen fälligen Task)
+export async function openTask(id) {
+  await show();
+  const card = cards.find((c) => c.id === id);
+  if (card) openDialog(card);
+  else toast('Diesen Task gibt es nicht mehr.');
+}
+
 // Tastatur: fokussierte Karte (Board) oder Zeile (Liste) mit Enter oder Leertaste öffnen
 function openOnKey(e, selector) {
   if ((e.key !== 'Enter' && e.key !== ' ') || !e.target.matches(selector)) return;
@@ -281,34 +290,53 @@ function openOnKey(e, selector) {
 // ---------------------------------------------------------------------
 // Liste: nach Spalte, darin nach Kategorie und Reihenfolge wie auf dem Board
 // ---------------------------------------------------------------------
+// Filter als Chips zum An- und Abwählen, wie im Task-Dialog (mehrere pro Gruppe möglich)
 function setupFilters() {
   const el = $('#task-filters');
-  const options = (pairs) => pairs.map(([value, label]) => `<option value="${esc(value)}">${esc(label)}</option>`).join('');
-  el.person.innerHTML = options([['', 'Alle'], ...ctx.members.map((m) => [m.github_username, m.display_name]), ['-', 'Niemand']]);
-  el.category.innerHTML = options([['', 'Alle'], ...Object.entries(CATEGORIES).map(([v, c]) => [v, c.label])]);
-  el.priority.innerHTML = options([['', 'Alle'], ...Object.entries(PRIORITIES)]);
-  el.status.innerHTML = options([['', 'Alle'], ['open', 'Alle offenen'], ...COLUMNS]);
-  el.addEventListener('submit', (e) => e.preventDefault());
-  el.addEventListener('input', () => {
-    filters = {
-      q: el.q.value.trim().toLowerCase(),
-      person: el.person.value,
-      category: el.category.value,
-      priority: el.priority.value,
-      status: el.status.value,
-    };
+  const groups = {
+    person: [...ctx.members.map((m) => ({ value: m.github_username, label: m.display_name, color: m.color })),
+      { value: NOBODY, label: 'Niemand', color: 'var(--muted)' }],
+    category: Object.entries(CATEGORIES).map(([value, c]) => ({ value, label: c.label, color: c.color })),
+    priority: Object.entries(PRIORITIES).map(([value, label]) => ({ value, label, color: 'var(--accent)' })),
+    status: COLUMNS.map(([value, label]) => ({ value, label, color: 'var(--accent)' })),
+  };
+  const renderChips = () => {
+    for (const [name, items] of Object.entries(groups)) {
+      $(`[data-filter="${name}"]`, el).innerHTML = toggleChips(items, filters[name], 'value');
+    }
+  };
+  const apply = () => {
+    $('#task-filters-reset').hidden = !filters.q && !Object.keys(groups).some((name) => filters[name].size);
     renderList();
+  };
+  renderChips();
+  el.addEventListener('submit', (e) => e.preventDefault());
+  el.q.addEventListener('input', () => {
+    filters.q = el.q.value.trim().toLowerCase();
+    apply();
+  });
+  el.addEventListener('click', (e) => {
+    const group = e.target.closest('[data-filter]');
+    if (group && toggleChip(e, filters[group.dataset.filter], 'value')) apply();
+  });
+  $('#task-filters-reset').addEventListener('click', () => {
+    el.q.value = '';
+    filters.q = '';
+    for (const name of Object.keys(groups)) filters[name].clear();
+    renderChips();
+    apply();
   });
 }
 
-function matchesFilters(c) {
-  const f = filters;
+// Passt die Karte zu den Filtern? Innerhalb einer Gruppe reicht ein Treffer, zwischen den Gruppen
+// müssen alle passen. f: { q (klein geschrieben), person, category, priority, status (je ein Set) }
+export function matchesFilters(c, f) {
   const text = `${c.title} ${c.description || ''} ${c.subtasks.map((s) => s.title).join(' ')}`.toLowerCase();
   if (f.q && !text.includes(f.q)) return false;
-  if (f.person === '-' ? c.assignees.length : f.person && !c.assignees.includes(f.person)) return false;
-  if (f.category && c.category !== f.category) return false;
-  if (f.priority && String(c.priority) !== f.priority) return false;
-  if (f.status === 'open' ? c.status === 'done' : f.status && c.status !== f.status) return false;
+  if (f.person.size && !(c.assignees.length ? c.assignees.some((u) => f.person.has(u)) : f.person.has(NOBODY))) return false;
+  if (f.category.size && !f.category.has(c.category)) return false;
+  if (f.priority.size && !f.priority.has(String(c.priority))) return false;
+  if (f.status.size && !f.status.has(c.status)) return false;
   return true;
 }
 
@@ -316,7 +344,7 @@ function renderList() {
   const statusOrder = COLUMNS.map(([s]) => s);
   const catOrder = Object.keys(CATEGORIES);
   const catIndex = (c) => (CATEGORIES[c.category] ? catOrder.indexOf(c.category) : catOrder.length);
-  const sorted = cards.filter(matchesFilters).sort((a, b) =>
+  const sorted = cards.filter((c) => matchesFilters(c, filters)).sort((a, b) =>
     statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status)
     || catIndex(a) - catIndex(b)
     || a.position - b.position);
@@ -363,6 +391,15 @@ function clearDropMarkers() {
   document.querySelectorAll('.drop-before, .drop-end').forEach((el) => el.classList.remove('drop-before', 'drop-end'));
 }
 
+// Position für eine Karte zwischen prev und next (je eine Karte oder undefined am Rand).
+// Mittelwert statt Neunummerieren: so ändert ein Verschieben nur die verschobene Karte.
+export function positionBetween(prev, next) {
+  if (prev && next) return (prev.position + next.position) / 2;
+  if (prev) return prev.position + 1;
+  if (next) return next.position - 1;
+  return 0;
+}
+
 // Vor welcher Karte (oder am Ende) soll eingefügt werden?
 function dropTarget(list, y) {
   const others = [...list.querySelectorAll('.kanban-card:not(.dragging)')];
@@ -393,13 +430,7 @@ async function onDrop(e) {
 
   const colCards = cardsIn(boardCards(), status, list.dataset.category).filter((c) => c.id !== id);
   const idx = beforeEl ? colCards.findIndex((c) => c.id === beforeEl.dataset.id) : colCards.length;
-  const prev = colCards[idx - 1];
-  const next = colCards[idx];
-  let position;
-  if (prev && next) position = (prev.position + next.position) / 2;
-  else if (prev) position = prev.position + 1;
-  else if (next) position = next.position - 1;
-  else position = 0;
+  const position = positionBetween(colCards[idx - 1], colCards[idx]);
 
   const card = cards.find((c) => c.id === id);
   if (card.status === status && card.position === position && (card.category || null) === category) return;
