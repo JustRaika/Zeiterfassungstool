@@ -5,6 +5,8 @@ Ein schlankes Web-Tool, mit dem unser 5-köpfiges Indie-Game-Team Arbeitszeit, T
 
 **👉 https://justraika.github.io/Zeiterfassungstool/** – IHR MÜSST EUCH MIT DEM EUREM GitHub-KONTO ANMELDEN
 
+**🎮 Demo zum Ausprobieren:** https://justraika.github.io/Zeiterfassungstool/?demo – ohne Anmeldung, mit Beispieldaten. Alles, was man dort ändert, bleibt im eigenen Browser; die echten Daten sind von dort aus nicht erreichbar.
+
 ## Funktionen
 - **Erfassen:** Start/Stop-Timer (läuft auch weiter, wenn der Browser zu ist) oder Stunden + Minuten
   manuell eintragen. Dazu mindestens ein Tag (mehrere möglich) und ein kurzer Kommentar (Pflicht, mind. 3 Zeichen, damit wir einen Überblick haben).

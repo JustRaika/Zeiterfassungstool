@@ -29,6 +29,7 @@
       <p class="muted">Melde dich mit deinem GitHub-Account an.</p>
       <button id="login-btn" class="btn primary">Mit GitHub anmelden</button>
       <p id="login-error" class="error-text small" hidden></p>
+      <p class="muted small login-demo">Nicht im Team? <a href="?demo#erfassen">Demo ansehen</a> – mit Beispieldaten, ohne Anmeldung.</p>
     </div>
   </section>
 
@@ -88,8 +89,11 @@
 
     <div class="content">
     <div id="demo-banner" class="banner" hidden>
-      <span><b>Demo-Modus:</b> Beispieldaten, nur in diesem Browser gespeichert. Für die echte Datenbank Supabase in <code>js/config.js</code> eintragen.</span>
-      <button id="demo-reset" class="btn ghost small">Beispieldaten zurücksetzen</button>
+      <span id="demo-text"><b>Demo-Modus:</b> Beispieldaten, nur in diesem Browser gespeichert. Für die echte Datenbank Supabase in <code>js/config.js</code> eintragen.</span>
+      <span class="row">
+        <button id="demo-reset" class="btn ghost small">Beispieldaten zurücksetzen</button>
+        <a id="demo-exit" class="btn ghost small" href="./" hidden>Demo beenden</a>
+      </span>
     </div>
 
     <main>

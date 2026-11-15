@@ -17,8 +17,12 @@ const IMAGE_BUCKET = 'task-images';
 // so funktionieren sie auch, wenn ein Dialog lange offen bleibt)
 const IMAGE_LINK_SECONDS = 24 * 60 * 60;
 
+// Öffentliche Demo: Mit ?demo in der Adresse läuft die App immer mit Beispieldaten im eigenen Browser.
+// Die Supabase-Bibliothek wird dann gar nicht erst geladen, es gibt also keinen Weg zu den echten Daten.
+export const isDemoLink = () => new URLSearchParams(location.search).has('demo');
+
 export async function createDb() {
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY && !isDemoLink()) {
     await loadScript(SUPABASE_JS);
     return new SupabaseDb(window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
   }

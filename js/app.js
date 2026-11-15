@@ -1,6 +1,6 @@
 // Einstieg: Login prüfen, gemeinsame Daten laden, Tabs umschalten.
 
-import { createDb } from './db.js';
+import { createDb, isDemoLink } from './db.js';
 import { $, confirmDialog, esc, toast } from './util.js';
 import * as erfassen from './erfassen.js';
 import * as uebersicht from './uebersicht.js';
@@ -116,6 +116,12 @@ function setupHeader() {
 
   if (ctx.db.mode === 'demo') {
     $('#demo-banner').hidden = false;
+    // Öffentliche Demo über den Link ?demo: Besucher erklären statt Entwickler
+    if (isDemoLink()) {
+      $('#demo-text').innerHTML = '<b>Demo:</b> Alles hier sind Beispieldaten. Probier Timer, Tasks und Co. ruhig aus: '
+        + 'Was du änderst, bleibt nur in deinem Browser und erreicht niemanden.';
+      $('#demo-exit').hidden = false;
+    }
     $('#logout-btn').hidden = true;
     $('#user-name').hidden = true;
     const sel = $('#demo-user');
