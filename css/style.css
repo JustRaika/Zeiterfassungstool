@@ -138,10 +138,12 @@ a.btn { display: inline-block; text-decoration: none; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 32px;
-  background: color-mix(in srgb, #f0a202 18%, var(--surface));
+  /* Demo-Hinweis: leicht blau getönt, damit er auffällt, ohne nach Warnung auszusehen */
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
   font-size: 0.85rem;
 }
+.banner b { color: var(--accent); }
 
 main { max-width: 1240px; margin: 0 auto; padding: 32px; }
 .view { display: flex; flex-direction: column; gap: 16px; }
@@ -235,6 +237,7 @@ textarea { resize: vertical; }
   border-radius: 8px;
   font-size: 0.85rem;
 }
+.banner b { color: var(--accent); }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
 
 /* ---------- Tags ---------- */
