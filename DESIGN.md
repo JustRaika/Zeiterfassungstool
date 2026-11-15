@@ -17,6 +17,7 @@ colors:
   schleier-dicht: "rgb(0 0 0 / 0.6)"
   signalrot: "#f06a7e"
   pausengelb: "#f5df8a"
+  demo-pink: "#f472b6"
   kategorie-design: "#e879f9"
   kategorie-code: "#4169e1"
   kategorie-admin: "#cbd5e1"
@@ -163,7 +164,7 @@ Eine dunkle, leicht violettstichige Graustufen-Werkbank mit einem kühlen blauen
 
 ### Secondary
 - **Pausengelb** (#f5df8a): Pausenzeit und Pausen-Stempel im Timer. Nur dort.
-- **Demo-Banner:** Polarlicht-Blau als 12 %-Tönung über dem Nachtgrund mit feiner blauer Linie darunter; „Demo:“ in Polarlicht-Blau. Kein Gelb, damit der Hinweis nicht nach Warnung aussieht.
+- **Demo-Pink** (#f472b6): nur für den Banner der öffentlichen Demo, als 20 %-Tönung über dem Nachtgrund mit Linie darunter, „Demo:“ und Knopf-Rahmen in Pink. Bewusst ein anderer Farbton als die Akzentfarbe, damit der Hinweis sofort auffällt; kein Verlauf, damit er nicht mit den Meilensteinen verwechselt wird.
 
 ### Tertiary
 - **Kategoriefarben** für Tasks: Design (#e879f9), Code (#4169e1), Admin (#cbd5e1), Testing (#a3e635). Sie beschriften die Swimlanes und färben den Kategorie-Punkt in der Task-Liste; Karten selbst bleiben neutral.

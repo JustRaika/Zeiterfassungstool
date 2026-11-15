@@ -137,13 +137,19 @@ a.btn { display: inline-block; text-decoration: none; }
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  /* Demo-Hinweis: leicht blau getönt, damit er auffällt, ohne nach Warnung auszusehen */
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  font-size: 0.85rem;
+  gap: 12px 24px;
+  padding: 16px 32px;
+  /* Demo-Hinweis in Pink: hebt sich klar vom blauen Rest der App ab, ohne nach Warnung auszusehen */
+  --demo: #f472b6;
+  background: color-mix(in srgb, var(--demo) 20%, var(--bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--demo) 40%, transparent);
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
-.banner b { color: var(--accent); }
+#demo-text { max-width: 75ch; }
+.banner b { color: var(--demo); }
+.banner .btn.ghost { border-color: color-mix(in srgb, var(--demo) 45%, transparent); }
+.banner .btn.ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--demo) 18%, transparent); }
 
 main { max-width: 1240px; margin: 0 auto; padding: 32px; }
 .view { display: flex; flex-direction: column; gap: 16px; }
@@ -237,7 +243,6 @@ textarea { resize: vertical; }
   border-radius: 8px;
   font-size: 0.85rem;
 }
-.banner b { color: var(--accent); }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
 
 /* ---------- Tags ---------- */
@@ -749,7 +754,7 @@ dialog input.title-input::placeholder { color: var(--muted); }
   .tabs a { flex: 1; justify-content: center; padding: 8px; white-space: nowrap; }
   .nav-count { margin-left: 0; }
   main { padding: 20px 16px; }
-  .banner { padding: 8px 16px; }
+  .banner { padding: 14px 16px; }
 }
 
 @media (max-width: 640px) {
