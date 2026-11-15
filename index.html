@@ -29,7 +29,7 @@
       <p class="muted">Melde dich mit deinem GitHub-Account an.</p>
       <button id="login-btn" class="btn primary">Mit GitHub anmelden</button>
       <p id="login-error" class="error-text small" hidden></p>
-      <p class="muted small login-demo">Nicht im Team? <a href="?demo#erfassen">Demo ansehen</a> – mit Beispieldaten, ohne Anmeldung.</p>
+      <p class="muted small login-demo">Nicht im Team? <a href="?demo#erfassen">Hier Demo ansehen</a> mit Beispieldaten.</p>
     </div>
   </section>
 
@@ -38,7 +38,7 @@
     <div class="card login-card">
       <h1 class="brand"><span class="wordmark">Fourcast</span> <span>Zeiterfassung</span></h1>
       <p>Der GitHub-Account <b id="denied-login"></b> ist nicht im Team eingetragen.</p>
-      <p class="muted small">Jemand aus dem Team muss deinen Usernamen in Supabase in der Tabelle <code>members</code> ergänzen.</p>
+      <p class="muted small">Jemand aus dem Team muss deinen Usernamen in der Datenbank ergänzen.</p>
       <button id="denied-logout" class="btn ghost">Abmelden</button>
     </div>
   </section>
@@ -89,7 +89,7 @@
 
     <div class="content">
     <div id="demo-banner" class="banner" hidden>
-      <span id="demo-text"><b>Demo-Modus:</b> Beispieldaten, nur in diesem Browser gespeichert. Für die echte Datenbank Supabase in <code>js/config.js</code> eintragen.</span>
+      <span id="demo-text"><b>Demo-Modus:</b> Beispieldaten, nur in diesem Browser gespeichert.</span>
       <span class="row">
         <button id="demo-reset" class="btn ghost small">Beispieldaten zurücksetzen</button>
         <a id="demo-exit" class="btn ghost small" href="./" hidden>Demo beenden</a>
@@ -105,7 +105,7 @@
             <img src="img/logo.png" alt="" class="mascot">
             <h2>Timer</h2>
             <div id="timer-display" class="timer-display">0:00:00</div>
-            <p id="timer-hint" class="muted small">Läuft nicht.</p>
+            <p id="timer-hint" class="muted small">Timer läuft nicht.</p>
             <div class="row">
               <button id="timer-start" class="btn primary">Start</button>
               <button id="timer-pause" class="btn" hidden>Pause</button>
@@ -141,7 +141,7 @@
               <legend>Tags <span class="muted">(mind. einer)</span></legend>
               <div id="tag-chips" class="chips"></div>
               <p id="err-tags" class="error-text field-error" hidden></p>
-              <p class="muted small tag-hint">Ein Tag fehlt? Frag Nika.</p>
+              <p class="muted small tag-hint">Ein Tag fehlt? Schreibs in #featurerequests.</p>
             </fieldset>
             <label class="field"><span>Kommentar <span class="muted">(kurzes Stichwort, mind. 3 Zeichen)</span></span>
               <textarea name="comment" rows="2" minlength="3" maxlength="500" required placeholder="z. B. Level 2 Blockout" aria-describedby="err-comment"></textarea>
@@ -292,7 +292,7 @@
         <div class="grid dateien-grid">
           <form id="lock-form" class="card" novalidate>
             <h2>Datei sperren</h2>
-            <p class="muted small">Trag ein, woran du im Unreal-Projekt gerade arbeitest. So ändert niemand dieselbe Datei gleichzeitig.</p>
+            <p class="muted small">Trag ein, woran du im Unreal-Projekt gerade arbeitest damit wir keine Merge-Konflikte haben.</p>
             <label class="field"><span>Dateien oder Ordner <span class="muted">(ein Pfad pro Zeile, Ordner mit / am Ende)</span></span>
               <textarea name="paths" rows="3" placeholder="Content/Maps/Level2.umap" aria-describedby="lock-error"></textarea>
             </label>
